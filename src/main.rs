@@ -1,4 +1,8 @@
 mod app;
+mod cpu;
+mod bus;
+
+use crate::app::App;
 
 use eframe::egui;
 
@@ -12,6 +16,6 @@ fn main() -> eframe::Result<()> {
     eframe::run_native(
         "Nemu",
         options,
-        Box::new(|_cc| Ok(Box::<app::MainWindow>::default()),
+        Box::new(|_cc| Ok(Box::<App>::default()),
     ))
 }
