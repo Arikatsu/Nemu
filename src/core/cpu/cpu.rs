@@ -17,13 +17,13 @@ impl CPU {
         self.regs.reset();
     }
 
-    pub fn step(&mut self, memory: &mut dyn Bus) -> u8 {
+    pub fn step<B: Bus>(&mut self, memory: &mut B) -> u8 {
         let opcode = memory.read(self.regs.pc());
         self.regs.inc_pc(1);
         self.execute(opcode, memory)
     }
 
-    fn execute(&mut self, opcode: u8, memory: &mut dyn Bus) -> u8 {
+    fn execute<B: Bus>(&mut self, opcode: u8, memory: &mut B) -> u8 {
         match opcode {
             0x00 => 4, // NOP
             0x01 => opcodes::ld_r16_imm(&mut self.regs, Reg16::BC, memory),

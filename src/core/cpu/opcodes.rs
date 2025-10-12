@@ -2,7 +2,7 @@ use super::registers::{Reg8, Reg16, Registers};
 use crate::core::bus::Bus;
 
 /// LD r8, imm - Load immediate 8-bit value into 8-bit register
-pub(super) fn ld_r8_imm(regs: &mut Registers, reg: Reg8, memory: &mut dyn Bus) -> u8 {
+pub(super) fn ld_r8_imm<B: Bus>(regs: &mut Registers, reg: Reg8, memory: &mut B) -> u8 {
     let value = memory.read(regs.pc());
     regs.inc_pc(1);
     regs.write_reg8(reg, value);
@@ -10,7 +10,7 @@ pub(super) fn ld_r8_imm(regs: &mut Registers, reg: Reg8, memory: &mut dyn Bus) -
 }
 
 /// LD r16, imm - Load immediate 16-bit value into 16-bit register
-pub(super) fn ld_r16_imm(regs: &mut Registers, reg: Reg16, memory: &mut dyn Bus) -> u8 {
+pub(super) fn ld_r16_imm<B: Bus>(regs: &mut Registers, reg: Reg16, memory: &mut B) -> u8 {
     let low = memory.read(regs.pc()) as u16;
     let high = memory.read(regs.pc() + 1) as u16;
     let value = (high << 8) | low;
@@ -20,7 +20,7 @@ pub(super) fn ld_r16_imm(regs: &mut Registers, reg: Reg16, memory: &mut dyn Bus)
 }
 
 /// LD (r16), r8 - Store 8-bit register value at memory address in 16-bit register
-pub(super) fn ld_mem_r16_r8(regs: &mut Registers, addr_reg: Reg16, src: Reg8, memory: &mut dyn Bus) -> u8 {
+pub(super) fn ld_mem_r16_r8<B: Bus>(regs: &mut Registers, addr_reg: Reg16, src: Reg8, memory: &mut B) -> u8 {
     let addr = regs.read_reg16(addr_reg);
     let value = regs.read_reg8(src);
     memory.write(addr, value);
