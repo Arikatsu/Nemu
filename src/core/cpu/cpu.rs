@@ -1,4 +1,5 @@
-use super::registers::Registers;
+use super::registers::{Reg8, Reg16, Registers};
+use super::opcodes;
 use crate::core::bus::Bus;
 
 pub struct CPU {
@@ -22,37 +23,18 @@ impl CPU {
         self.execute(opcode, memory)
     }
 
-    /// Returns the number of cycles the instruction took
-    pub fn execute(&mut self, opcode: u8, memory: &mut dyn Bus) -> u8 {
+    fn execute(&mut self, opcode: u8, memory: &mut dyn Bus) -> u8 {
         match opcode {
             0x00 => 4, // NOP
-
-            0x3E => { // LD A, u8
-                let value = memory.read(self.regs.pc());
-                self.regs.set_a(value);
-                self.regs.inc_pc(1);
-                8
-            }
-
-            0x06 => { // LD B, u8
-                let value = memory.read(self.regs.pc());
-                self.regs.set_b(value);
-                self.regs.inc_pc(1);
-                8
-            }
-
-            0x80 => { // ADD A, B
-                let a = self.regs.a();
-                let b = self.regs.b();
-                let (result, carry) = a.overflowing_add(b);
-                self.regs.set_a(result);
-
-                self.regs.set_zero_flag(result == 0);
-                self.regs.set_subtract_flag(false);
-                self.regs.set_half_carry_flag((a & 0x0F) + (b & 0x0F) > 0x0F);
-                self.regs.set_carry_flag(carry);
-                4
-            }
+            0x01 => opcodes::ld_r16_imm(&mut self.regs, Reg16::BC, memory),
+            0x02 => opcodes::ld_mem_r16_r8(&mut self.regs, Reg16::BC, Reg8::A, memory),
+            0x03 => opcodes::inc_r16(&mut self.regs, Reg16::BC),
+            0x04 => opcodes::inc_r8(&mut self.regs, Reg8::B),
+            0x05 => opcodes::dec_r8(&mut self.regs, Reg8::B),
+            0x06 => opcodes::ld_r8_imm(&mut self.regs, Reg8::B, memory),
+            0x07 => opcodes::rlca(&mut self.regs),
+            0x3E => opcodes::ld_r8_imm(&mut self.regs, Reg8::A, memory),
+            0x80 => opcodes::add_a_r8(&mut self.regs, Reg8::B),
 
             _ => {
                 println!("Unimplemented opcode: {:02X}", opcode);

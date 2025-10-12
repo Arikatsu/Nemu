@@ -9,6 +9,28 @@ pub struct Registers {
     pc: u16, // Program Counter
 }
 
+#[derive(Clone, Copy)]
+pub enum Reg8 {
+    A,
+    F,
+    B,
+    C,
+    D,
+    E,
+    H,
+    L,
+}
+
+#[derive(Clone, Copy)]
+pub enum Reg16 {
+    AF,
+    BC,
+    DE,
+    HL,
+    SP,
+    PC,
+}
+
 impl Registers {
     pub(super) fn new() -> Self {
         Self {
@@ -235,6 +257,54 @@ impl Registers {
             self.set_f(self.f() | 0x10);
         } else {
             self.set_f(self.f() & !0x10);
+        }
+    }
+    
+    pub fn read_reg8(&self, reg: Reg8) -> u8 {
+        match reg {
+            Reg8::A => self.a(),
+            Reg8::F => self.f(),
+            Reg8::B => self.b(),
+            Reg8::C => self.c(),
+            Reg8::D => self.d(),
+            Reg8::E => self.e(),
+            Reg8::H => self.h(),
+            Reg8::L => self.l(),
+        }
+    }
+    
+    pub fn write_reg8(&mut self, reg: Reg8, value: u8) {
+        match reg {
+            Reg8::A => self.set_a(value),
+            Reg8::F => self.set_f(value),
+            Reg8::B => self.set_b(value),
+            Reg8::C => self.set_c(value),
+            Reg8::D => self.set_d(value),
+            Reg8::E => self.set_e(value),
+            Reg8::H => self.set_h(value),
+            Reg8::L => self.set_l(value),
+        }
+    }
+    
+    pub fn read_reg16(&self, reg: Reg16) -> u16 {
+        match reg {
+            Reg16::AF => self.af(),
+            Reg16::BC => self.bc(),
+            Reg16::DE => self.de(),
+            Reg16::HL => self.hl(),
+            Reg16::SP => self.sp(),
+            Reg16::PC => self.pc(),
+        }
+    }
+    
+    pub fn write_reg16(&mut self, reg: Reg16, value: u16) {
+        match reg {
+            Reg16::AF => self.set_af(value),
+            Reg16::BC => self.set_bc(value),
+            Reg16::DE => self.set_de(value),
+            Reg16::HL => self.set_hl(value),
+            Reg16::SP => self.set_sp(value),
+            Reg16::PC => self.set_pc(value),
         }
     }
 

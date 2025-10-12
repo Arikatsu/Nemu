@@ -8,7 +8,7 @@ const HEIGHT: usize = 144;
 
 pub struct App {
     screen: Screen,
-    nemu: Nemu
+    nemu: Nemu,
 }
 
 impl Default for App {
