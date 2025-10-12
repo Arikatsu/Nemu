@@ -1,4 +1,5 @@
 use super::screen::Screen;
+use crate::core::Nemu;
 
 use eframe::egui;
 
@@ -7,12 +8,14 @@ const HEIGHT: usize = 144;
 
 pub struct App {
     screen: Screen,
+    nemu: Nemu
 }
 
 impl Default for App {
     fn default() -> Self {
         Self {
             screen: Screen::new(),
+            nemu: Nemu::new(),
         }
     }
 }
@@ -33,8 +36,19 @@ impl eframe::App for App {
                         size: egui::vec2(WIDTH as f32 * 4.0, HEIGHT as f32 * 4.0),
                     }));
                 }
-            });
 
-        ctx.request_repaint();
+                ui.separator();
+                ui.label("Registers:");
+                ui.monospace(self.nemu.get_regs_snapshot());
+                ui.separator();
+
+                if ui.button("Reset").clicked() {
+                    self.nemu.reset();
+                }
+                if ui.button("Step").clicked() {
+                    self.nemu.step();
+                }
+            });
+        ctx.request_repaint_after(std::time::Duration::from_millis(16));
     }
 }
