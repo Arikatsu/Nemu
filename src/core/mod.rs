@@ -2,25 +2,23 @@ mod bus;
 mod cpu;
 
 pub struct Nemu {
-    cpu: cpu::CPU,
-    bus: bus::TestBus,
+    cpu: cpu::CPU<bus::TestBus>
 }
 
 impl Nemu {
     pub fn new() -> Self {
-        Self {
-            cpu: cpu::CPU::new(),
-            bus: bus::TestBus::new(),
-        }
+        let bus = bus::TestBus::new();
+        let cpu = cpu::CPU::new(bus);
+        Self { cpu }
     }
     
     pub fn reset(&mut self) {
         self.cpu.reset();
-        self.bus = bus::TestBus::new();
+        self.cpu.memory.reset();
     }
     
     pub fn step(&mut self) -> u8 {
-        self.cpu.step(&mut self.bus)
+        self.cpu.step()
     }
     
     pub fn get_regs_snapshot(&self) -> String {
