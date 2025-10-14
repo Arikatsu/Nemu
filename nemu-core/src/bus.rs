@@ -61,7 +61,7 @@ impl TestBus {
         Self { memory }
     }
 
-    pub fn reset(&mut self) {
+    pub(crate) fn reset(&mut self) {
         self.memory = [0; 65536];
     }
 }
