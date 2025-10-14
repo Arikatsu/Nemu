@@ -117,6 +117,13 @@ impl<B: Bus> CPU<B> {
             0x76 => opcodes::ld_r8_mem_r16(self, Reg8::A, Reg16::HL),
             0x7F => 4, // LD A, A
             0x80 => opcodes::add_a_r8(self, Reg8::B),
+            0x81 => opcodes::add_a_r8(self, Reg8::C),
+            0x82 => opcodes::add_a_r8(self, Reg8::D),
+            0x83 => opcodes::add_a_r8(self, Reg8::E),
+            0x84 => opcodes::add_a_r8(self, Reg8::H),
+            0x85 => opcodes::add_a_r8(self, Reg8::L),
+            0x86 => opcodes::add_a_mem_hl(self),
+            0x87 => opcodes::add_a_r8(self, Reg8::A),
 
             _ => {
                 panic!("Unimplemented opcode: {:02X}", opcode);

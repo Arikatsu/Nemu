@@ -140,6 +140,7 @@ pub(super) fn rlca<B: Bus>(cpu: &mut CPU<B>) -> u8 {
     4
 }
 
+/// ADD A, r8 - Add 8-bit register value to A
 pub(super) fn add_a_r8<B: Bus>(cpu: &mut CPU<B>, reg: Reg8) -> u8 {
     let a = cpu.regs.a();
     let value = cpu.regs.read_reg8(reg);
@@ -151,4 +152,19 @@ pub(super) fn add_a_r8<B: Bus>(cpu: &mut CPU<B>, reg: Reg8) -> u8 {
     cpu.regs.set_half_carry_flag((a & 0x0F) + (value & 0x0F) > 0x0F);
     cpu.regs.set_carry_flag(carry);
     4
+}
+
+/// ADD A, (HL) - Add value at address in HL to A
+pub(super) fn add_a_mem_hl<B: Bus>(cpu: &mut CPU<B>) -> u8 {
+    let a = cpu.regs.a();
+    let addr = cpu.regs.hl();
+    let value = cpu.memory.borrow().read(addr);
+    let (result, carry) = a.overflowing_add(value);
+    cpu.regs.set_a(result);
+
+    cpu.regs.set_zero_flag(result == 0);
+    cpu.regs.set_subtract_flag(false);
+    cpu.regs.set_half_carry_flag((a & 0x0F) + (value & 0x0F) > 0x0F);
+    cpu.regs.set_carry_flag(carry);
+    8
 }
