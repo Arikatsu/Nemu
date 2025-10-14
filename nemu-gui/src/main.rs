@@ -1,5 +1,7 @@
-use super::screen::Screen;
-use crate::core::Nemu;
+mod screen;
+
+use screen::Screen;
+use nemu_core::Nemu;
 
 use eframe::egui;
 
@@ -51,4 +53,18 @@ impl eframe::App for App {
             });
         ctx.request_repaint_after(std::time::Duration::from_millis(16));
     }
+}
+
+fn main() -> eframe::Result<()> {
+    let options = eframe::NativeOptions {
+        viewport: egui::ViewportBuilder::default()
+            .with_inner_size([160.0 * 4.0, 200.0 * 4.0]),
+        ..Default::default()
+    };
+
+    eframe::run_native(
+        "Nemu",
+        options,
+        Box::new(|_cc| Ok(Box::<App>::default()),
+        ))
 }

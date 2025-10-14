@@ -11,16 +11,16 @@ impl Nemu {
         let cpu = cpu::CPU::new(bus);
         Self { cpu }
     }
-    
+
     pub fn reset(&mut self) {
         self.cpu.reset();
         self.cpu.memory.reset();
     }
-    
+
     pub fn step(&mut self) -> u8 {
         self.cpu.step()
     }
-    
+
     pub fn get_regs_snapshot(&self) -> String {
         self.cpu.regs.get_snapshot()
     }

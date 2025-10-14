@@ -1,6 +1,6 @@
 use super::registers::{Reg8, Reg16, Registers};
 use super::opcodes;
-use crate::core::bus::Bus;
+use crate::bus::Bus;
 
 pub struct CPU<B: Bus> {
     pub(crate) regs: Registers,

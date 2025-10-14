@@ -1,6 +1,6 @@
 use super::CPU;
 use super::registers::{Reg8, Reg16};
-use crate::core::bus::Bus;
+use crate::bus::Bus;
 
 /// LD r8, r8 - Load 8-bit register value into another 8-bit register
 pub(super) fn ld_r8_r8<B: Bus>(cpu: &mut CPU<B>, dest: Reg8, src: Reg8) -> u8 {

@@ -1,0 +1,8 @@
+[package]
+name = "nemu-gui"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+eframe = "0.33.0"
+nemu-core = { path = "../nemu-core" }

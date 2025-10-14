@@ -1,7 +1,6 @@
-[package]
-name = "nemu"
-version = "0.1.0"
-edition = "2024"
-
-[dependencies]
-eframe = "0.33.0"
+[workspace]
+resolver = "3"
+members = [
+    "nemu-core",
+    "nemu-gui",
+]
