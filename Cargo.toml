@@ -3,7 +3,6 @@ resolver = "3"
 members = [
     "nemu-core",
     "nemu-gui",
-    "tests",
 ]
 
 [workspace.package]
