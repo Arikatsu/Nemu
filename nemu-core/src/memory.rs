@@ -1,26 +1,10 @@
-pub(super) trait Bus {
-    fn read(&self, addr: u16) -> u8;
-    fn write(&mut self, addr: u16, data: u8);
+use crate::traits::Bus;
 
-    fn read_u16(&self, addr: u16) -> u16 {
-        let low = self.read(addr) as u16;
-        let high = self.read(addr + 1) as u16;
-        (high << 8) | low
-    }
-
-    fn write_u16(&mut self, addr: u16, data: u16) {
-        let low = (data & 0x00FF) as u8;
-        let high = (data >> 8) as u8;
-        self.write(addr, low);
-        self.write(addr + 1, high);
-    }
-}
-
-pub struct TestBus {
+pub struct Memory {
     memory: [u8; 65536],
 }
 
-impl TestBus {
+impl Memory {
     pub fn new() -> Self {
         let mut memory = [0; 65536];
         // Test program starting at 0x0100
@@ -66,7 +50,7 @@ impl TestBus {
     }
 }
 
-impl Bus for TestBus {
+impl Bus for Memory {
     fn read(&self, addr: u16) -> u8 {
         self.memory[addr as usize]
     }

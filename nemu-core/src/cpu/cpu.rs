@@ -1,17 +1,20 @@
 use super::registers::{Reg8, Reg16, Registers};
 use super::opcodes;
-use crate::bus::Bus;
+use crate::traits::Bus;
+
+use std::rc::Rc;
+use std::cell::RefCell;
 
 pub struct CPU<B: Bus> {
     pub(crate) regs: Registers,
-    pub(crate) memory: B,
+    pub(crate) memory: Rc<RefCell<B>>,
 }
 
 impl<B: Bus> CPU<B> {
-    pub fn new(memory: B) -> Self {
+    pub fn new(bus: Rc<RefCell<B>>) -> Self {
         Self {
             regs: Registers::new(),
-            memory,
+            memory: bus,
         }
     }
 
@@ -20,7 +23,7 @@ impl<B: Bus> CPU<B> {
     }
 
     pub fn step(&mut self) -> u8 {
-        let opcode = self.memory.read(self.regs.pc());
+        let opcode = self.memory.borrow().read(self.regs.pc());
         self.regs.inc_pc(1);
         self.execute(opcode)
     }

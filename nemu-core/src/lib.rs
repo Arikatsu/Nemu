@@ -1,20 +1,25 @@
-mod bus;
+use std::rc::Rc;
+use std::cell::RefCell;
+
+mod memory;
 mod cpu;
+mod traits;
 
 pub struct Nemu {
-    cpu: cpu::CPU<bus::TestBus>
+    cpu: cpu::CPU<memory::Memory>,
+    memory: Rc<RefCell<memory::Memory>>
 }
 
 impl Nemu {
     pub fn new() -> Self {
-        let bus = bus::TestBus::new();
-        let cpu = cpu::CPU::new(bus);
-        Self { cpu }
+        let memory = Rc::new(RefCell::new(memory::Memory::new()));
+        let cpu = cpu::CPU::new(Rc::clone(&memory));
+        Self { memory, cpu }
     }
 
     pub fn reset(&mut self) {
         self.cpu.reset();
-        self.cpu.memory.reset();
+        self.memory.borrow_mut().reset();
     }
 
     pub fn step(&mut self) -> u8 {
@@ -28,7 +33,7 @@ impl Nemu {
 
 #[cfg(test)]
 mod tests {
-    use crate::bus::Bus;
+    use crate::traits::Bus;
     use super::Nemu;
 
     #[test]
@@ -58,7 +63,7 @@ mod tests {
         // Step 4: LD (BC), A
         let cycles = nemu.step();
         assert_eq!(cycles, 8);
-        assert_eq!(nemu.cpu.memory.read(0xC050), 0x42);
+        assert_eq!(nemu.memory.borrow().read(0xC050), 0x42);
         assert_eq!(nemu.cpu.regs.pc(), 0x0108);
 
         // Step 5: INC BC
