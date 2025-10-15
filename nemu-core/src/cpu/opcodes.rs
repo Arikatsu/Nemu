@@ -202,6 +202,13 @@ pub(super) fn dec_r8<B: Bus>(cpu: &mut Cpu<B>, reg: Reg8) -> u8 {
     4
 }
 
+/// DEC r16 - Decrement 16-bit register
+pub(super) fn dec_r16<B: Bus>(cpu: &mut Cpu<B>, reg: Reg16) -> u8 {
+    let value = cpu.regs.read_reg16(reg);
+    cpu.regs.write_reg16(reg, value.wrapping_sub(1));
+    8
+}
+
 /// RLCA - Rotate A left, old bit 7 to Carry flag
 pub(super) fn rlca<B: Bus>(cpu: &mut Cpu<B>) -> u8 {
     let a = cpu.regs.a();
@@ -280,4 +287,22 @@ pub(super) fn jp_imm16<B: Bus>(cpu: &mut Cpu<B>) -> u8 {
     let addr = cpu.memory.borrow().read_u16(cpu.pc);
     cpu.set_pc(addr);
     16
+}
+
+/// CALL imm16 - Call subroutine at immediate 16-bit address
+pub(super) fn call_imm16<B: Bus>(cpu: &mut Cpu<B>) -> u8 {
+    let addr = cpu.memory.borrow().read_u16(cpu.pc);
+    cpu.inc_pc(2);
+    let ret_addr = cpu.pc;
+    let sp = cpu.sp.wrapping_sub(2);
+    cpu.memory.borrow_mut().write_u16(sp, ret_addr);
+    cpu.set_sp(sp);
+    cpu.set_pc(addr);
+    24
+}
+
+/// DI - Disable interrupts
+pub(super) fn di<B: Bus>(cpu: &mut Cpu<B>) -> u8 {
+    cpu.ime = false;
+    4
 }
