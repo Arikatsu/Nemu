@@ -1,7 +1,7 @@
 mod registers;
-mod opcodes;
+mod instructions;
 
-use opcodes::*;
+use instructions::*;
 use registers::{Reg8, Reg16, Registers};
 use crate::traits::Bus;
 
@@ -136,14 +136,14 @@ impl<B: Bus> Cpu<B> {
             0x7D => ld_r8_r8(self, Reg8::A, Reg8::L),
             0x76 => ld_r8_mem_r16(self, Reg8::A, Reg16::HL),
             0x7F => 4, // LD A, A
-            0x80 => add_a_r8(self, Reg8::B),
-            0x81 => add_a_r8(self, Reg8::C),
-            0x82 => add_a_r8(self, Reg8::D),
-            0x83 => add_a_r8(self, Reg8::E),
-            0x84 => add_a_r8(self, Reg8::H),
-            0x85 => add_a_r8(self, Reg8::L),
-            0x86 => add_a_mem_hl(self),
-            0x87 => add_a_r8(self, Reg8::A),
+            0x80 => add_r8(self, Reg8::B),
+            0x81 => add_r8(self, Reg8::C),
+            0x82 => add_r8(self, Reg8::D),
+            0x83 => add_r8(self, Reg8::E),
+            0x84 => add_r8(self, Reg8::H),
+            0x85 => add_r8(self, Reg8::L),
+            0x86 => add_mem_hl(self),
+            0x87 => add_r8(self, Reg8::A),
             0xC1 => pop_r16(self, Reg16::BC),
             0xC3 => jp_imm16(self),
             0xC5 => push_r16(self, Reg16::BC),
