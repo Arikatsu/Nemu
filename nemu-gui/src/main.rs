@@ -17,7 +17,7 @@ impl Default for App {
     fn default() -> Self {
         Self {
             screen: Screen::new(),
-            nemu: Nemu::default(),
+            nemu: Nemu::with_rom("tests/cpu_instrs/individual/04-op r,imm.gb").expect("Failed to load ROM"),
         }
     }
 }

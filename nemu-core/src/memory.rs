@@ -12,7 +12,7 @@ pub struct Memory {
 }
 
 impl Memory {
-    pub fn new() -> Self {
+    pub(crate) fn new() -> Self {
         Self {
             cartridge: [0; 0x8000],
             vram: [0; 0x2000],
@@ -34,6 +34,11 @@ impl Memory {
         self.io = [0; 0x80];
         self.hram = [0; 0x7F];
         self.ie = 0;
+    }
+
+    pub(crate) fn load_cartridge_bytes(&mut self, data: &[u8]) {
+        let len = data.len().min(self.cartridge.len());
+        self.cartridge[..len].copy_from_slice(&data[..len]);
     }
 }
 

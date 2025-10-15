@@ -34,10 +34,10 @@ pub enum Reg16 {
 impl Registers {
     pub(super) fn new() -> Self {
         Self {
-            af: 0,
-            bc: 0,
-            de: 0,
-            hl: 0,
+            af: 0x01B0,
+            bc: 0x0013,
+            de: 0x00D8,
+            hl: 0x014D,
             sp: 0xFFFE,
             pc: 0x0100,
         }
