@@ -6,17 +6,19 @@ mod cpu;
 mod traits;
 
 pub struct Nemu {
-    cpu: cpu::CPU<memory::Memory>,
+    cpu: cpu::Cpu<memory::Memory>,
     memory: Rc<RefCell<memory::Memory>>
 }
 
-impl Nemu {
-    pub fn new() -> Self {
+impl Default for Nemu {
+    fn default() -> Self {
         let memory = Rc::new(RefCell::new(memory::Memory::new()));
-        let cpu = cpu::CPU::new(Rc::clone(&memory));
+        let cpu = cpu::Cpu::new(Rc::clone(&memory));
         Self { memory, cpu }
     }
+}
 
+impl Nemu {
     pub fn reset(&mut self) {
         self.cpu.reset();
         self.memory.borrow_mut().reset();
@@ -38,7 +40,7 @@ mod tests {
 
     #[test]
     fn test_all_opcodes() {
-        let mut nemu = Nemu::new();
+        let mut nemu = Nemu::default();
 
         // Step 1: LD A, 0x42
         let cycles = nemu.step();

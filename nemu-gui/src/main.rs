@@ -17,7 +17,7 @@ impl Default for App {
     fn default() -> Self {
         Self {
             screen: Screen::new(),
-            nemu: Nemu::new(),
+            nemu: Nemu::default(),
         }
     }
 }

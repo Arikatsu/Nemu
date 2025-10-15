@@ -1,16 +1,18 @@
-use super::registers::{Reg8, Reg16, Registers};
-use super::opcodes;
+mod registers;
+mod opcodes;
+
+use registers::{Reg8, Reg16, Registers};
 use crate::traits::Bus;
 
 use std::rc::Rc;
 use std::cell::RefCell;
 
-pub struct CPU<B: Bus> {
+pub struct Cpu<B: Bus> {
     pub(crate) regs: Registers,
     pub(crate) memory: Rc<RefCell<B>>,
 }
 
-impl<B: Bus> CPU<B> {
+impl<B: Bus> Cpu<B> {
     pub fn new(bus: Rc<RefCell<B>>) -> Self {
         Self {
             regs: Registers::new(),
