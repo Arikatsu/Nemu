@@ -95,6 +95,44 @@ pub(super) fn ld_mem_imm16_sp<B: Bus>(cpu: &mut Cpu<B>) -> u8 {
     20
 }
 
+/// LDH (imm8), A - Store A at address 0xFF00 + immediate 8-bit value
+pub(super) fn ldh_mem_imm8_a<B: Bus>(cpu: &mut Cpu<B>) -> u8 {
+    let offset = cpu.memory.borrow().read(cpu.regs.pc());
+    cpu.regs.inc_pc(1);
+    let addr = 0xFF00u16.wrapping_add(offset as u16);
+    let a = cpu.regs.a();
+    cpu.memory.borrow_mut().write(addr, a);
+    12
+}
+
+/// LDH A, (imm8) - Load A from address 0xFF00 + immediate 8-bit value
+pub(super) fn ldh_a_mem_imm8<B: Bus>(cpu: &mut Cpu<B>) -> u8 {
+    let offset = cpu.memory.borrow().read(cpu.regs.pc());
+    cpu.regs.inc_pc(1);
+    let addr = 0xFF00u16.wrapping_add(offset as u16);
+    let value = cpu.memory.borrow().read(addr);
+    cpu.regs.set_a(value);
+    12
+}
+
+/// LDH (C), A - Store A at address 0xFF00 + C
+pub(super) fn ldh_mem_c_a<B: Bus>(cpu: &mut Cpu<B>) -> u8 {
+    let offset = cpu.regs.c();
+    let addr = 0xFF00u16.wrapping_add(offset as u16);
+    let a = cpu.regs.a();
+    cpu.memory.borrow_mut().write(addr, a);
+    8
+}
+
+/// LDH A, (C) - Load A from address 0xFF00 + C
+pub(super) fn ldh_a_mem_c<B: Bus>(cpu: &mut Cpu<B>) -> u8 {
+    let offset = cpu.regs.c();
+    let addr = 0xFF00u16.wrapping_add(offset as u16);
+    let value = cpu.memory.borrow().read(addr);
+    cpu.regs.set_a(value);
+    8
+}
+
 /// INC r16 - Increment 16-bit register
 pub(super) fn inc_r16<B: Bus>(cpu: &mut Cpu<B>, reg: Reg16) -> u8 {
     let value = cpu.regs.read_reg16(reg);
@@ -167,4 +205,22 @@ pub(super) fn add_a_mem_hl<B: Bus>(cpu: &mut Cpu<B>) -> u8 {
     cpu.regs.set_half_carry_flag((a & 0x0F) + (value & 0x0F) > 0x0F);
     cpu.regs.set_carry_flag(carry);
     8
+}
+
+/// POP r16 - Pop 16-bit value from stack into 16-bit register
+pub(super) fn pop_r16<B: Bus>(cpu: &mut Cpu<B>, reg: Reg16) -> u8 {
+    let sp = cpu.regs.sp();
+    let value = cpu.memory.borrow().read_u16(sp);
+    cpu.regs.write_reg16(reg, value);
+    cpu.regs.set_sp(sp.wrapping_add(2));
+    12
+}
+
+/// PUSH r16 - Push 16-bit register value onto stack
+pub(super) fn push_r16<B: Bus>(cpu: &mut Cpu<B>, reg: Reg16) -> u8 {
+    let sp = cpu.regs.sp().wrapping_sub(2);
+    let value = cpu.regs.read_reg16(reg);
+    cpu.memory.borrow_mut().write_u16(sp, value);
+    cpu.regs.set_sp(sp);
+    16
 }

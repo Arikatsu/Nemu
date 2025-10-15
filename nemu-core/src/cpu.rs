@@ -43,14 +43,17 @@ impl<B: Bus> Cpu<B> {
             0x08 => opcodes::ld_mem_imm16_sp(self),
             0x0A => opcodes::ld_r8_mem_r16(self, Reg8::A, Reg16::BC),
             0x0E => opcodes::ld_r8_imm8(self, Reg8::C),
+            0x11 => opcodes::ld_r16_imm16(self, Reg16::DE),
             0x12 => opcodes::ld_mem_r16_r8(self, Reg16::DE, Reg8::A),
             0x16 => opcodes::ld_r8_imm8(self, Reg8::D),
             0x1A => opcodes::ld_r8_mem_r16(self, Reg8::A, Reg16::DE),
             0x1E => opcodes::ld_r8_imm8(self, Reg8::E),
+            0x21 => opcodes::ld_r16_imm16(self, Reg16::HL),
             0x22 => opcodes::ld_mem_hli_a(self),
             0x26 => opcodes::ld_r8_imm8(self, Reg8::H),
             0x2A => opcodes::ld_a_mem_hli(self),
             0x2E => opcodes::ld_r8_imm8(self, Reg8::L),
+            0x31 => opcodes::ld_r16_imm16(self, Reg16::SP),
             0x32 => opcodes::ld_mem_hld_a(self),
             0x36 => opcodes::ld_mem_r16_imm8(self, Reg16::HL),
             0x3A => opcodes::ld_a_mem_hld(self),
@@ -126,9 +129,21 @@ impl<B: Bus> Cpu<B> {
             0x85 => opcodes::add_a_r8(self, Reg8::L),
             0x86 => opcodes::add_a_mem_hl(self),
             0x87 => opcodes::add_a_r8(self, Reg8::A),
+            0xC1 => opcodes::pop_r16(self, Reg16::BC),
+            0xC5 => opcodes::push_r16(self, Reg16::BC),
+            0xD1 => opcodes::pop_r16(self, Reg16::DE),
+            0xD5 => opcodes::push_r16(self, Reg16::DE),
+            0xE0 => opcodes::ldh_mem_imm8_a(self),
+            0xE1 => opcodes::pop_r16(self, Reg16::HL),
+            0xE2 => opcodes::ldh_mem_c_a(self),
+            0xE5 => opcodes::push_r16(self, Reg16::HL),
+            0xF0 => opcodes::ldh_a_mem_imm8(self),
+            0xF1 => opcodes::pop_r16(self, Reg16::AF),
+            0xF2 => opcodes::ldh_a_mem_c(self),
+            0xF5 => opcodes::push_r16(self, Reg16::AF),
 
             _ => {
-                panic!("Unimplemented opcode: {:02X}", opcode);
+                unimplemented!("Unimplemented opcode: {:02X}", opcode);
             }
         }
     }
