@@ -1,12 +1,10 @@
 #![allow(dead_code)]
 
 pub struct Registers {
-    af: u16, // Accumulator & Flags
-    bc: u16, // B & C
-    de: u16, // D & E
-    hl: u16, // H & L
-    sp: u16, // Stack Pointer
-    pc: u16, // Program Counter
+    af: u16,    // Accumulator & Flags
+    bc: u16,    // B & C
+    de: u16,    // D & E
+    hl: u16,    // H & L
 }
 
 #[derive(Clone, Copy)]
@@ -27,8 +25,6 @@ pub enum Reg16 {
     BC,
     DE,
     HL,
-    SP,
-    PC,
 }
 
 impl Registers {
@@ -38,8 +34,6 @@ impl Registers {
             bc: 0x0013,
             de: 0x00D8,
             hl: 0x014D,
-            sp: 0xFFFE,
-            pc: 0x0100,
         }
     }
     
@@ -48,8 +42,6 @@ impl Registers {
         self.bc = 0x0013;
         self.de = 0x00D8;
         self.hl = 0x014D;
-        self.sp = 0xFFFE;
-        self.pc = 0x0100;
     }
 
     #[inline]
@@ -90,36 +82,6 @@ impl Registers {
     #[inline]
     pub fn set_hl(&mut self, value: u16) {
         self.hl = value;
-    }
-
-    #[inline]
-    pub fn sp(&self) -> u16 {
-        self.sp
-    }
-
-    #[inline]
-    pub fn set_sp(&mut self, value: u16) {
-        self.sp = value;
-    }
-
-    #[inline]
-    pub fn pc(&self) -> u16 {
-        self.pc
-    }
-
-    #[inline]
-    pub fn set_pc(&mut self, value: u16) {
-        self.pc = value;
-    }
-
-    #[inline]
-    pub fn inc_pc(&mut self, value: u16) {
-        self.pc = self.pc.wrapping_add(value);
-    }
-
-    #[inline]
-    pub fn dec_pc(&mut self, value: u16) {
-        self.pc = self.pc.wrapping_sub(value);
     }
 
     #[inline]
@@ -292,8 +254,6 @@ impl Registers {
             Reg16::BC => self.bc(),
             Reg16::DE => self.de(),
             Reg16::HL => self.hl(),
-            Reg16::SP => self.sp(),
-            Reg16::PC => self.pc(),
         }
     }
     
@@ -303,15 +263,13 @@ impl Registers {
             Reg16::BC => self.set_bc(value),
             Reg16::DE => self.set_de(value),
             Reg16::HL => self.set_hl(value),
-            Reg16::SP => self.set_sp(value),
-            Reg16::PC => self.set_pc(value),
         }
     }
 
     pub fn get_snapshot(&self) -> String {
         format!(
-            "A: {:02X} F: {:02X}\nB: {:02X} C: {:02X}\nD: {:02X} E: {:02X}\nH: {:02X} L: {:02X}\nSP: {:04X}\nPC: {:04X}",
-            self.a(), self.f(), self.b(), self.c(), self.d(), self.e(), self.h(), self.l(), self.sp, self.pc
+            "A: {:02X} F: {:02X}\nB: {:02X} C: {:02X}\nD: {:02X} E: {:02X}\nH: {:02X} L: {:02X}",
+            self.a(), self.f(), self.b(), self.c(), self.d(), self.e(), self.h(), self.l(),
         )
     }
 }
