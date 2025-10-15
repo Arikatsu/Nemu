@@ -152,10 +152,13 @@ impl<B: Bus> Cpu<B> {
             0xE1 => pop_r16(self, Reg16::HL),
             0xE2 => ldh_mem_c_a(self),
             0xE5 => push_r16(self, Reg16::HL),
+            0xEA => ld_mem_imm16_a(self),
             0xF0 => ldh_a_mem_imm8(self),
             0xF1 => pop_r16(self, Reg16::AF),
             0xF2 => ldh_a_mem_c(self),
             0xF5 => push_r16(self, Reg16::AF),
+            0xF8 => ld_hl_sp_imm8(self),
+            0xF9 => ld_sp_hl(self),
 
             _ => {
                 unimplemented!("Unimplemented opcode: {:02X}", opcode);
