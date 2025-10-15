@@ -3,7 +3,7 @@
 A Game Boy emulator in Rust. This repo contains:
 
 - `nemu-core`: CPU/memory core
-- `app`: binary to run ROMs
+- `nemu-gui`: binary to run ROMs with visual output
 - `nemu-tests`: test crate running Blargg test ROMs
 - `test_roms`: submodule with test ROMs
 
@@ -17,7 +17,7 @@ git clone --recurse-submodules https://github.com/Arikatsu/nemu.git
 
 Run tests:
 ```bash
-cargo test -p nemu-tests
+cargo test -p nemu-core
 ```
 
 (no tests exist yet lol, getting some basic ops down first)
