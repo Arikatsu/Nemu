@@ -1,9 +1,9 @@
-use std::rc::Rc;
-use std::cell::RefCell;
-
 mod memory;
 mod cpu;
 mod traits;
+
+use std::rc::Rc;
+use std::cell::RefCell;
 
 pub struct Nemu {
     cpu: cpu::Cpu<memory::Memory>,
