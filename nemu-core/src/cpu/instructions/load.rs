@@ -170,3 +170,12 @@ pub(in crate::cpu) fn ld_mem_imm16_a<B: Bus>(cpu: &mut Cpu<B>) -> u8 {
     cpu.memory.borrow_mut().write(addr, a);
     16
 }
+
+/// LD A, (imm16) - Load A from immediate 16-bit address
+pub(in crate::cpu) fn ld_a_mem_imm16<B: Bus>(cpu: &mut Cpu<B>) -> u8 {
+    let addr = cpu.memory.borrow().read_u16(cpu.pc);
+    cpu.inc_pc(2);
+    let value = cpu.memory.borrow().read(addr);
+    cpu.regs.set_a(value);
+    16
+}
