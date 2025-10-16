@@ -31,6 +31,31 @@ impl<B: Bus> Cpu<B> {
         self.regs.reset();
     }
 
+    #[inline]
+    pub fn set_pc(&mut self, value: u16) {
+        self.pc = value;
+    }
+
+    #[inline]
+    pub fn inc_pc(&mut self, value: u16) {
+        self.pc = self.pc.wrapping_add(value);
+    }
+
+    #[inline]
+    pub fn set_sp(&mut self, value: u16) {
+        self.sp = value;
+    }
+
+    #[inline]
+    pub fn inc_sp(&mut self, value: u16) {
+        self.sp = self.sp.wrapping_add(value);
+    }
+
+    #[inline]
+    pub fn dec_sp(&mut self, value: u16) {
+        self.sp = self.sp.wrapping_sub(value);
+    }
+
     pub fn step(&mut self) -> u8 {
         let opcode = self.memory.borrow().read(self.pc);
         self.inc_pc(1);
@@ -58,6 +83,7 @@ impl<B: Bus> Cpu<B> {
             0x14 => inc_r8(self, Reg8::D),
             0x15 => dec_r8(self, Reg8::D),
             0x16 => ld_r8_imm8(self, Reg8::D),
+            0x18 => jr_imm8(self),
             0x1A => ld_r8_mem_r16(self, Reg8::A, Reg16::DE),
             0x1B => dec_r16(self, Reg16::DE),
             0x1C => inc_r8(self, Reg8::E),
@@ -147,6 +173,7 @@ impl<B: Bus> Cpu<B> {
             0xC1 => pop_r16(self, Reg16::BC),
             0xC3 => jp_imm16(self),
             0xC5 => push_r16(self, Reg16::BC),
+            0xC9 => ret(self),
             0xCD => call_imm16(self),
             0xD1 => pop_r16(self, Reg16::DE),
             0xD5 => push_r16(self, Reg16::DE),
