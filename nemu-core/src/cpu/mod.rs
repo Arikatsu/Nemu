@@ -74,6 +74,7 @@ impl<B: Bus> Cpu<B> {
             0x07 => rlca(self),
             0x08 => ld_mem_imm16_sp(self),
             0x0A => ld_r8_mem_r16(self, Reg8::A, Reg16::BC),
+            0x0B => dec_r16(self, Reg16::BC),
             0x0C => inc_r8(self, Reg8::C),
             0x0D => dec_r8(self, Reg8::C),
             0x0E => ld_r8_imm8(self, Reg8::C),
@@ -91,13 +92,17 @@ impl<B: Bus> Cpu<B> {
             0x20 => jr_nz_imm8(self),
             0x21 => ld_r16_imm16(self, Reg16::HL),
             0x22 => ld_mem_hli_a(self),
+            0x23 => inc_r16(self, Reg16::HL),
             0x26 => ld_r8_imm8(self, Reg8::H),
             0x2A => ld_a_mem_hli(self),
+            0x2B => dec_r16(self, Reg16::HL),
             0x2E => ld_r8_imm8(self, Reg8::L),
             0x31 => ld_sp_imm16(self),
             0x32 => ld_mem_hld_a(self),
+            0x33 => inc_sp(self),
             0x36 => ld_mem_r16_imm8(self, Reg16::HL),
             0x3A => ld_a_mem_hld(self),
+            0x3B => dec_sp(self),
             0x3E => ld_r8_imm8(self, Reg8::A),
             0x40 => 4, // LD B, B (lmao....)
             0x41 => ld_r8_r8(self, Reg8::B, Reg8::C),
@@ -170,6 +175,62 @@ impl<B: Bus> Cpu<B> {
             0x85 => add_r8(self, Reg8::L),
             0x86 => add_mem_hl(self),
             0x87 => add_r8(self, Reg8::A),
+            0x88 => adc_r8(self, Reg8::B),
+            0x89 => adc_r8(self, Reg8::C),
+            0x8A => adc_r8(self, Reg8::D),
+            0x8B => adc_r8(self, Reg8::E),
+            0x8C => adc_r8(self, Reg8::H),
+            0x8D => adc_r8(self, Reg8::L),
+            0x8E => adc_mem_hl(self),
+            0x8F => adc_r8(self, Reg8::A),
+            0x90 => sub_r8(self, Reg8::B),
+            0x91 => sub_r8(self, Reg8::C),
+            0x92 => sub_r8(self, Reg8::D),
+            0x93 => sub_r8(self, Reg8::E),
+            0x94 => sub_r8(self, Reg8::H),
+            0x95 => sub_r8(self, Reg8::L),
+            0x96 => sub_mem_hl(self),
+            0x97 => sub_r8(self, Reg8::A),
+            0x98 => sbc_r8(self, Reg8::B),
+            0x99 => sbc_r8(self, Reg8::C),
+            0x9A => sbc_r8(self, Reg8::D),
+            0x9B => sbc_r8(self, Reg8::E),
+            0x9C => sbc_r8(self, Reg8::H),
+            0x9D => sbc_r8(self, Reg8::L),
+            0x9E => sbc_mem_hl(self),
+            0x9F => sbc_r8(self, Reg8::A),
+            0xA0 => and_r8(self, Reg8::B),
+            0xA1 => and_r8(self, Reg8::C),
+            0xA2 => and_r8(self, Reg8::D),
+            0xA3 => and_r8(self, Reg8::E),
+            0xA4 => and_r8(self, Reg8::H),
+            0xA5 => and_r8(self, Reg8::L),
+            0xA6 => and_mem_hl(self),
+            0xA7 => and_r8(self, Reg8::A),
+            0xA8 => xor_r8(self, Reg8::B),
+            0xA9 => xor_r8(self, Reg8::C),
+            0xAA => xor_r8(self, Reg8::D),
+            0xAB => xor_r8(self, Reg8::E),
+            0xAC => xor_r8(self, Reg8::H),
+            0xAD => xor_r8(self, Reg8::L),
+            0xAE => xor_mem_hl(self),
+            0xAF => xor_r8(self, Reg8::A),
+            0xB0 => or_r8(self, Reg8::B),
+            0xB1 => or_r8(self, Reg8::C),
+            0xB2 => or_r8(self, Reg8::D),
+            0xB3 => or_r8(self, Reg8::E),
+            0xB4 => or_r8(self, Reg8::H),
+            0xB5 => or_r8(self, Reg8::L),
+            0xB6 => or_mem_hl(self),
+            0xB7 => or_r8(self, Reg8::A),
+            0xB8 => cp_r8(self, Reg8::B),
+            0xB9 => cp_r8(self, Reg8::C),
+            0xBA => cp_r8(self, Reg8::D),
+            0xBB => cp_r8(self, Reg8::E),
+            0xBC => cp_r8(self, Reg8::H),
+            0xBD => cp_r8(self, Reg8::L),
+            0xBE => cp_mem_hl(self),
+            0xBF => cp_r8(self, Reg8::A),
             0xC1 => pop_r16(self, Reg16::BC),
             0xC3 => jp_imm16(self),
             0xC5 => push_r16(self, Reg16::BC),
@@ -194,25 +255,5 @@ impl<B: Bus> Cpu<B> {
                 unimplemented!("Unimplemented opcode: {:02X}", opcode);
             }
         }
-    }
-    
-    #[inline]
-    pub fn set_pc(&mut self, value: u16) {
-        self.pc = value;
-    }
-    
-    #[inline]
-    pub fn inc_pc(&mut self, value: u16) {
-        self.pc = self.pc.wrapping_add(value);
-    }
-
-    #[inline]
-    pub fn set_sp(&mut self, value: u16) {
-        self.sp = value;
-    }
-    
-    #[inline]
-    pub fn inc_sp(&mut self, value: u16) {
-        self.sp = self.sp.wrapping_add(value);
     }
 }
