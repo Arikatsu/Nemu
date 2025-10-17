@@ -70,6 +70,13 @@ impl<B: Bus> Cpu<B> {
         self.write_log_line();
         let opcode = self.memory.borrow().read(self.pc);
         self.inc_pc(1);
+
+        if opcode == 0xCB {
+            let cb_opcode = self.memory.borrow().read(self.pc);
+            self.inc_pc(1);
+            return self.execute_cb(cb_opcode);
+        }
+
         self.execute(opcode)
     }
 
@@ -278,7 +285,7 @@ impl<B: Bus> Cpu<B> {
             0xC8 => ret_cond(self, JumpCond::Z),
             0xC9 => ret(self),
             0xCA => jp_cond_imm16(self, JumpCond::Z),
-            // 0xCB => PREFIX CB (let me out of cpu hell)
+            // 0xCB => PREFIX CB
             0xCC => call_cond_imm16(self, JumpCond::Z),
             0xCD => call_imm16(self),
             0xCE => adc_imm8(self),
@@ -334,6 +341,99 @@ impl<B: Bus> Cpu<B> {
 
             _ => {
                 unimplemented!("Unimplemented opcode: {:02X}", opcode);
+            }
+        }
+    }
+
+    fn execute_cb(&mut self, opcode: u8) -> u8 {
+        match opcode {
+            0x00..=0x07 => {
+                return match reg_cb(opcode) {
+                    Some(r) => rlc_r8(self, r),
+                    None => rlc_mem_hl(self),
+                }
+            }
+            0x08..=0x0F => {
+                return match reg_cb(opcode) {
+                    Some(r) => rrc_r8(self, r),
+                    None => rrc_mem_hl(self),
+                }
+            }
+            0x10..=0x17 => {
+                return match reg_cb(opcode) {
+                    Some(r) => rl_r8(self, r),
+                    None => rl_mem_hl(self),
+                }
+            }
+            0x18..=0x1F => {
+                return match reg_cb(opcode) {
+                    Some(r) => rr_r8(self, r),
+                    None => rr_mem_hl(self),
+                }
+            }
+            0x20..=0x27 => {
+                return match reg_cb(opcode) {
+                    Some(r) => sla_r8(self, r),
+                    None => sla_mem_hl(self),
+                }
+            }
+            0x28..=0x2F => {
+                return match reg_cb(opcode) {
+                    Some(r) => sra_r8(self, r),
+                    None => sra_mem_hl(self),
+                }
+            }
+            0x30..=0x37 => {
+                return match reg_cb(opcode) {
+                    Some(r) => swap_r8(self, r),
+                    None => swap_mem_hl(self),
+                }
+            }
+            0x38..=0x3F => {
+                return match reg_cb(opcode) {
+                    Some(r) => srl_r8(self, r),
+                    None => srl_mem_hl(self),
+                }
+            }
+            0x40..=0x7F => {
+                let bit = (opcode - 0x40) / 8;
+                return match reg_cb(opcode) {
+                    Some(r) => bit_imm3_r8(self, bit, r),
+                    None => bit_imm3_mem_hl(self, bit),
+                }
+            }
+            0x80..=0xBF => {
+                let bit = (opcode - 0x80) / 8;
+                return match reg_cb(opcode) {
+                    Some(r) => res_imm3_r8(self, bit, r),
+                    None => res_imm3_mem_hl(self, bit),
+                }
+            }
+            0xC0..=0xFF => {
+                let bit = (opcode - 0xC0) / 8;
+                return match reg_cb(opcode) {
+                    Some(r) => set_imm3_r8(self, bit, r),
+                    None => set_imm3_mem_hl(self, bit),
+                }
+            }
+
+            _ => {
+                unimplemented!("Unimplemented CB opcode: {:02X}", opcode);
+            }
+        }
+
+        #[inline]
+        fn reg_cb(code: u8) -> Option<Reg8> {
+            match code & 0x07 {
+                0 => Some(Reg8::B),
+                1 => Some(Reg8::C),
+                2 => Some(Reg8::D),
+                3 => Some(Reg8::E),
+                4 => Some(Reg8::H),
+                5 => Some(Reg8::L),
+                6 => None, // (HL)
+                7 => Some(Reg8::A),
+                _ => unreachable!(),
             }
         }
     }
