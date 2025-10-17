@@ -77,10 +77,10 @@ mod tests {
     }
 
     #[test]
-    fn test_cpu_instrs_01() {
+    fn test_cpu_instrs_05() {
         let output = run_test_rom(
-            "../tests/cpu_instrs/individual/01-special.gb",
-            1_000_000
+            "../tests/cpu_instrs/individual/05-op rp.gb",
+            10_000_000
         );
 
         println!("Output:\n{}", output);

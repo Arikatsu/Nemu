@@ -7,13 +7,17 @@ use crate::traits::Bus;
 
 use std::rc::Rc;
 use std::cell::RefCell;
+#[cfg(feature = "debug_logging")]
+use std::io::{BufWriter, Write};
 
 pub struct Cpu<B: Bus> {
-    pub(crate) regs: Registers,
+    pub regs: Registers,
     pub(crate) memory: Rc<RefCell<B>>,
     pub(crate) sp: u16,   // Stack Pointer
     pub(crate) pc: u16,   // Program Counter
     pub(crate) ime: bool, // Interrupt Master Enable
+    #[cfg(feature = "debug_logging")]
+    log_writer: BufWriter<std::fs::File>,
 }
 
 impl<B: Bus> Cpu<B> {
@@ -24,11 +28,16 @@ impl<B: Bus> Cpu<B> {
             sp: 0xFFFE,
             pc: 0x0100,
             ime: false,
+            #[cfg(feature = "debug_logging")]
+            log_writer: BufWriter::with_capacity(64 * 1024, std::fs::File::create("cpu_trace.log").unwrap()),
         }
     }
 
     pub fn reset(&mut self) {
         self.regs.reset();
+        self.sp = 0xFFFE;
+        self.pc = 0x0100;
+        self.ime = false;
     }
 
     #[inline]
@@ -57,6 +66,8 @@ impl<B: Bus> Cpu<B> {
     }
 
     pub fn step(&mut self) -> u8 {
+        #[cfg(feature = "debug_logging")]
+        self.write_log_line();
         let opcode = self.memory.borrow().read(self.pc);
         self.inc_pc(1);
         self.execute(opcode)
@@ -325,5 +336,32 @@ impl<B: Bus> Cpu<B> {
                 unimplemented!("Unimplemented opcode: {:02X}", opcode);
             }
         }
+    }
+
+    #[cfg(feature = "debug_logging")]
+    #[inline]
+    fn write_log_line(&mut self) {
+        let mem = self.memory.borrow();
+        let pc0 = mem.read(self.pc);
+        let pc1 = mem.read(self.pc.wrapping_add(1));
+        let pc2 = mem.read(self.pc.wrapping_add(2));
+        let pc3 = mem.read(self.pc.wrapping_add(3));
+        drop(mem);
+
+        writeln!(
+            self.log_writer,
+            "A:{:02X} F:{:02X} B:{:02X} C:{:02X} D:{:02X} E:{:02X} H:{:02X} L:{:02X} SP:{:04X} PC:{:04X} PCMEM:{:02X},{:02X},{:02X},{:02X}",
+            self.regs.a(),
+            self.regs.f(),
+            self.regs.b(),
+            self.regs.c(),
+            self.regs.d(),
+            self.regs.e(),
+            self.regs.h(),
+            self.regs.l(),
+            self.sp,
+            self.pc,
+            pc0, pc1, pc2, pc3,
+        ).unwrap();
     }
 }

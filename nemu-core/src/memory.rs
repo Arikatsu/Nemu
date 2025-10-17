@@ -52,6 +52,11 @@ impl Bus for Memory {
             0xE000..=0xFDFF => self.wram[(addr - 0xE000) as usize], // Echo RAM
             0xFE00..=0xFE9F => self.oam[(addr - 0xFE00) as usize],
             0xFEA0..=0xFEFF => 0, // unusable
+            #[cfg(feature = "debug_logging")]
+            0xFF44 => {
+                // LY register
+                0x90
+            }
             0xFF00..=0xFF7F => self.io[(addr - 0xFF00) as usize],
             0xFF80..=0xFFFE => self.hram[(addr - 0xFF80) as usize],
             0xFFFF => self.ie,
@@ -67,6 +72,11 @@ impl Bus for Memory {
             0xE000..=0xFDFF => self.wram[(addr - 0xE000) as usize] = data, // Echo RAM
             0xFE00..=0xFE9F => self.oam[(addr - 0xFE00) as usize] = data,
             0xFEA0..=0xFEFF => { /* unusable */ }
+            #[cfg(feature = "debug_logging")]
+            0xFF01 => {
+                print!("{}", data as char);
+                self.io[(addr - 0xFF00) as usize] = data;
+            }
             0xFF00..=0xFF7F => self.io[(addr - 0xFF00) as usize] = data,
             0xFF80..=0xFFFE => self.hram[(addr - 0xFF80) as usize] = data,
             0xFFFF => self.ie = data,
