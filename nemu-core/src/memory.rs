@@ -1,6 +1,6 @@
 use crate::traits::Bus;
 
-pub struct Memory {
+pub(crate) struct Memory {
     cartridge: [u8; 0x8000], // 32KB Cartridge ROM
     vram: [u8; 0x2000],      // 8KB Video RAM
     eram: [u8; 0x2000],      // 8KB External RAM
@@ -9,6 +9,8 @@ pub struct Memory {
     io: [u8; 0x80],          // I/O Registers
     hram: [u8; 0x7F],        // High RAM
     ie: u8,                  // Interrupt Enable Register
+    #[cfg(test)]
+    pub(crate) serial_output: String,
 }
 
 impl Memory {
@@ -22,6 +24,8 @@ impl Memory {
             io: [0; 0x80],
             hram: [0; 0x7F],
             ie: 0,
+            #[cfg(test)]
+            serial_output: String::new(),
         }
     }
 
@@ -34,6 +38,11 @@ impl Memory {
         self.io = [0; 0x80];
         self.hram = [0; 0x7F];
         self.ie = 0;
+
+        #[cfg(test)]
+        {
+            self.serial_output.clear();
+        }
     }
 
     pub(crate) fn load_cartridge_bytes(&mut self, data: &[u8]) {
@@ -72,10 +81,15 @@ impl Bus for Memory {
             0xE000..=0xFDFF => self.wram[(addr - 0xE000) as usize] = data, // Echo RAM
             0xFE00..=0xFE9F => self.oam[(addr - 0xFE00) as usize] = data,
             0xFEA0..=0xFEFF => { /* unusable */ }
-            #[cfg(feature = "debug_logging")]
-            0xFF01 => {
-                print!("{}", data as char);
+            0xFF02 => {
                 self.io[(addr - 0xFF00) as usize] = data;
+                if data == 0x81 {
+                    #[cfg(test)]
+                    {
+                        self.serial_output.push(self.io[0x01] as char);
+                    }
+                    self.io[0x02] = 0;
+                }
             }
             0xFF00..=0xFF7F => self.io[(addr - 0xFF00) as usize] = data,
             0xFF80..=0xFFFE => self.hram[(addr - 0xFF80) as usize] = data,

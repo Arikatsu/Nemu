@@ -47,43 +47,113 @@ impl Nemu {
 
 #[cfg(test)]
 mod tests {
-    use crate::traits::Bus;
     use super::*;
 
-    fn run_test_rom(path: &str, max_cycles: u64) -> String {
+    fn run_test_rom(path: &str) -> bool {
         let mut nemu = Nemu::with_rom(path).expect("Failed to load ROM");
 
-        let mut serial_output = String::new();
-        let mut cycles = 0;
+        for i in 0..10_000_000 {
+            nemu.step();
 
-        while cycles < max_cycles {
-            let c = nemu.step() as u64;
-            cycles += c;
-
-            if nemu.cpu.memory.borrow().read(0xFF02) == 0x81 {
-                let byte = nemu.cpu.memory.borrow().read(0xFF01);
-                serial_output.push(byte as char);
-
-                nemu.cpu.memory.borrow_mut().write(0xFF02, 0x00);
-
-                if serial_output.contains("Passed") ||
-                    serial_output.contains("Failed") {
-                    break;
+            if i % 10000 == 0 {
+                let output = &nemu.memory.borrow().serial_output;
+                if output.contains("Passed") {
+                    return true;
+                } else if output.contains("Failed") {
+                    println!("\x1b[32mSerial Output:\x1b[0m\n{}", output);
+                    return false;
                 }
             }
         }
 
-        serial_output
+        false
+    }
+
+    #[test]
+    fn test_cpu_instrs_01() {
+        let result = run_test_rom(
+            "../tests/cpu_instrs/individual/01-special.gb",
+        );
+        assert!(result);
+    }
+
+    #[test]
+    fn test_cpu_instrs_02() {
+        let result = run_test_rom(
+            "../tests/cpu_instrs/individual/02-interrupts.gb",
+        );
+        assert!(result);
+    }
+
+    #[test]
+    fn test_cpu_instrs_03() {
+        let result = run_test_rom(
+            "../tests/cpu_instrs/individual/03-op sp,hl.gb",
+        );
+        assert!(result);
+    }
+
+    #[test]
+    fn test_cpu_instrs_04() {
+        let result = run_test_rom(
+            "../tests/cpu_instrs/individual/04-op r,imm.gb",
+        );
+        assert!(result);
     }
 
     #[test]
     fn test_cpu_instrs_05() {
-        let output = run_test_rom(
+        let result = run_test_rom(
             "../tests/cpu_instrs/individual/05-op rp.gb",
-            10_000_000
         );
+        assert!(result);
+    }
 
-        println!("Output:\n{}", output);
-        assert!(output.contains("Passed"));
+    #[test]
+    fn test_cpu_instrs_06() {
+        let result = run_test_rom(
+            "../tests/cpu_instrs/individual/06-ld r,r.gb",
+        );
+        assert!(result);
+    }
+
+    #[test]
+    fn test_cpu_instrs_07() {
+        let result = run_test_rom(
+            "../tests/cpu_instrs/individual/07-jr,jp,call,ret,rst.gb",
+        );
+        assert!(result);
+    }
+
+    #[test]
+    fn test_cpu_instrs_08() {
+        let result = run_test_rom(
+            "../tests/cpu_instrs/individual/08-misc instrs.gb",
+        );
+        assert!(result);
+    }
+
+    #[test]
+    fn test_cpu_instrs_09() {
+        let result = run_test_rom(
+            "../tests/cpu_instrs/individual/09-op r,r.gb",
+        );
+        assert!(result);
+    }
+
+    #[test]
+    fn test_cpu_instrs_10() {
+        let result = run_test_rom(
+            "../tests/cpu_instrs/individual/10-bit ops.gb",
+        );
+        assert!(result);
+    }
+
+    #[test]
+    fn test_cpu_instrs_11() {
+        let result = run_test_rom(
+            "../tests/cpu_instrs/individual/11-op a,(hl).gb",
+        );
+        assert!(result);
     }
 }
