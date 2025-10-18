@@ -10,12 +10,19 @@ use std::cell::RefCell;
 #[cfg(feature = "debug_logging")]
 use std::io::{BufWriter, Write};
 
+pub(in self) enum InterruptMode {
+    Enabled,
+    Disabled,
+    Pending,
+}
+
 pub struct Cpu<B: Bus> {
     pub regs: Registers,
-    pub(crate) memory: Rc<RefCell<B>>,
-    pub(crate) sp: u16,   // Stack Pointer
-    pub(crate) pc: u16,   // Program Counter
-    pub(crate) ime: bool, // Interrupt Master Enable
+    pub(in self) memory: Rc<RefCell<B>>,
+    pub(in self) sp: u16,                 // Stack Pointer
+    pub(in self) pc: u16,                 // Program Counter
+    pub(in self) ime: InterruptMode,      // Interrupt Master Enable Flag
+
     #[cfg(feature = "debug_logging")]
     log_writer: BufWriter<std::fs::File>,
 }
@@ -27,7 +34,8 @@ impl<B: Bus> Cpu<B> {
             memory: bus,
             sp: 0xFFFE,
             pc: 0x0100,
-            ime: false,
+            ime: InterruptMode::Disabled,
+
             #[cfg(feature = "debug_logging")]
             log_writer: BufWriter::with_capacity(64 * 1024, std::fs::File::create("cpu_trace.log").unwrap()),
         }
@@ -37,7 +45,7 @@ impl<B: Bus> Cpu<B> {
         self.regs.reset();
         self.sp = 0xFFFE;
         self.pc = 0x0100;
-        self.ime = false;
+        self.ime = InterruptMode::Disabled;
     }
 
     #[inline]
@@ -68,6 +76,11 @@ impl<B: Bus> Cpu<B> {
     pub fn step(&mut self) -> u8 {
         #[cfg(feature = "debug_logging")]
         self.write_log_line();
+
+        if let InterruptMode::Pending = self.ime {
+            self.ime = InterruptMode::Enabled;
+        }
+
         let opcode = self.memory.borrow().read(self.pc);
         self.inc_pc(1);
 

@@ -1,4 +1,4 @@
-use crate::cpu::Cpu;
+use crate::cpu::{Cpu, InterruptMode};
 use crate::traits::Bus;
 
 pub(in crate::cpu) enum JumpCond {
@@ -122,7 +122,7 @@ pub(in crate::cpu) fn ret_cond<B: Bus>(cpu: &mut Cpu<B>, cond: JumpCond) -> u8 {
 /// RETI - Return from interrupt (enable interrupts after return)
 pub(in crate::cpu) fn reti<B: Bus>(cpu: &mut Cpu<B>) -> u8 {
     let cycles = ret(cpu);
-    cpu.ime = true;
+    cpu.ime = InterruptMode::Enabled;
     cycles
 }
 

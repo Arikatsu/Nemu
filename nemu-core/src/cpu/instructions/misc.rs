@@ -1,4 +1,4 @@
-use crate::cpu::Cpu;
+use crate::cpu::{Cpu, InterruptMode};
 use crate::traits::Bus;
 
 /// STOP - Enter low power mode (halts CPU until an interrupt occurs)
@@ -16,12 +16,12 @@ pub(in crate::cpu) fn halt<B: Bus>(_cpu: &mut Cpu<B>) -> u8 {
 
 /// DI - Disable interrupts
 pub(in crate::cpu) fn di<B: Bus>(cpu: &mut Cpu<B>) -> u8 {
-    cpu.ime = false;
+    cpu.ime = InterruptMode::Disabled;
     4
 }
 
-/// EI - Enable interrupts
+/// EI - Enable interrupts (actually delayed until next instruction, so set to Pending)
 pub(in crate::cpu) fn ei<B: Bus>(cpu: &mut Cpu<B>) -> u8 {
-    cpu.ime = true;
+    cpu.ime = InterruptMode::Pending;
     4
 }
