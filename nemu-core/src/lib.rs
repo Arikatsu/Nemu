@@ -2,18 +2,15 @@ mod memory;
 mod cpu;
 mod traits;
 
-use std::rc::Rc;
-use std::cell::RefCell;
-
 pub struct Nemu {
-    cpu: cpu::Cpu<memory::Memory>,
-    memory: Rc<RefCell<memory::Memory>>
+    cpu: cpu::Cpu,
+    memory: memory::Memory,
 }
 
 impl Default for Nemu {
     fn default() -> Self {
-        let memory = Rc::new(RefCell::new(memory::Memory::new()));
-        let cpu = cpu::Cpu::new(Rc::clone(&memory));
+        let memory = memory::Memory::new();
+        let cpu = cpu::Cpu::new();
         Self { memory, cpu }
     }
 }
@@ -27,16 +24,16 @@ impl Nemu {
 
     pub fn reset(&mut self) {
         self.cpu.reset();
-        self.memory.borrow_mut().reset();
+        self.memory.reset();
     }
 
     pub fn step(&mut self) -> u8 {
-        self.cpu.step()
+        self.cpu.step(&mut self.memory)
     }
 
     pub fn load_cartridge<P: AsRef<std::path::Path>>(&mut self, path: P) -> std::io::Result<()> {
         let data = std::fs::read(path)?;
-        self.memory.borrow_mut().load_cartridge_bytes(&data);
+        self.memory.load_cartridge_bytes(&data);
         Ok(())
     }
 
@@ -56,7 +53,7 @@ mod tests {
             nemu.step();
 
             if i % 10000 == 0 {
-                let output = &nemu.memory.borrow().serial_output;
+                let output = &nemu.memory.serial_output;
                 if output.contains("Passed") {
                     return true;
                 } else if output.contains("Failed") {

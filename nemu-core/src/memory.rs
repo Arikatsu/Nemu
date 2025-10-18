@@ -1,5 +1,3 @@
-use crate::traits::Bus;
-
 pub(crate) struct Memory {
     cartridge: [u8; 0x8000], // 32KB Cartridge ROM
     vram: [u8; 0x2000],      // 8KB Video RAM
@@ -51,8 +49,7 @@ impl Memory {
     }
 }
 
-impl Bus for Memory {
-    fn read(&self, addr: u16) -> u8 {
+    pub(crate) fn read(&self, addr: u16) -> u8 {
         match addr {
             0x0000..=0x7FFF => self.cartridge[addr as usize],
             0x8000..=0x9FFF => self.vram[(addr - 0x8000) as usize],
@@ -72,7 +69,8 @@ impl Bus for Memory {
         }
     }
 
-    fn write(&mut self, addr: u16, data: u8) {
+    pub(crate) fn write(&mut self, addr: u16, data: u8) {
+        //noinspection RsNonExhaustiveMatch
         match addr {
             0x0000..=0x7FFF => { /* ROM area (no write) */ }
             0x8000..=0x9FFF => self.vram[(addr - 0x8000) as usize] = data,
@@ -95,5 +93,18 @@ impl Bus for Memory {
             0xFF80..=0xFFFE => self.hram[(addr - 0xFF80) as usize] = data,
             0xFFFF => self.ie = data,
         }
+    }
+
+    pub(crate) fn read_u16(&self, addr: u16) -> u16 {
+        let low = self.read(addr) as u16;
+        let high = self.read(addr + 1) as u16;
+        (high << 8) | low
+    }
+
+    pub(crate) fn write_u16(&mut self, addr: u16, data: u16) {
+        let low = (data & 0x00FF) as u8;
+        let high = (data >> 8) as u8;
+        self.write(addr, low);
+        self.write(addr + 1, high);
     }
 }
