@@ -22,7 +22,7 @@ pub(in crate::cpu) fn inc_r16(ctx: &mut InstructionContext, reg: Reg16) -> u8 {
 
 /// INC SP - Increment Stack Pointer
 pub(in crate::cpu) fn inc_sp(ctx: &mut InstructionContext) -> u8 {
-    ctx.cpu.inc_sp(1);
+    ctx.cpu.regs.inc_sp(1);
     8
 }
 
@@ -60,7 +60,7 @@ pub(in crate::cpu) fn dec_r16(ctx: &mut InstructionContext, reg: Reg16) -> u8 {
 
 /// DEC SP - Decrement Stack Pointer
 pub(in crate::cpu) fn dec_sp(ctx: &mut InstructionContext) -> u8 {
-    ctx.cpu.dec_sp(1);
+    ctx.cpu.regs.dec_sp(1);
     8
 }
 
@@ -107,8 +107,8 @@ pub(in crate::cpu) fn add_hl_r16(ctx: &mut InstructionContext, reg: Reg16) -> u8
 /// ADD A, imm8 - Add immediate 8-bit value to A
 pub(in crate::cpu) fn add_imm8(ctx: &mut InstructionContext) -> u8 {
     let a = ctx.cpu.regs.a();
-    let value = ctx.memory.read(ctx.cpu.pc);
-    ctx.cpu.inc_pc(1);
+    let value = ctx.memory.read(ctx.cpu.regs.pc());
+    ctx.cpu.regs.inc_pc(1);
     let (result, carry) = a.overflowing_add(value);
     ctx.cpu.regs.set_a(result);
 
@@ -137,7 +137,7 @@ pub(in crate::cpu) fn add_mem_hl(ctx: &mut InstructionContext) -> u8 {
 /// ADD HL, SP - Add Stack Pointer to HL
 pub(in crate::cpu) fn add_hl_sp(ctx: &mut InstructionContext) -> u8 {
     let hl = ctx.cpu.regs.hl();
-    let sp = ctx.cpu.sp;
+    let sp = ctx.cpu.regs.sp();
     let (result, carry) = hl.overflowing_add(sp);
     ctx.cpu.regs.set_hl(result);
 
@@ -149,11 +149,11 @@ pub(in crate::cpu) fn add_hl_sp(ctx: &mut InstructionContext) -> u8 {
 
 /// ADD SP, imm8 - Add immediate 8-bit signed value to Stack Pointer
 pub(in crate::cpu) fn add_sp_imm8(ctx: &mut InstructionContext) -> u8 {
-    let sp = ctx.cpu.sp;
-    let offset = ctx.memory.read(ctx.cpu.pc) as i8;
-    ctx.cpu.inc_pc(1);
+    let sp = ctx.cpu.regs.sp();
+    let offset = ctx.memory.read(ctx.cpu.regs.pc()) as i8;
+    ctx.cpu.regs.inc_pc(1);
     let result = sp.wrapping_add(offset as u16);
-    ctx.cpu.set_sp(result);
+    ctx.cpu.regs.set_sp(result);
 
     ctx.cpu.regs.set_zero_flag(false);
     ctx.cpu.regs.set_subtract_flag(false);
@@ -181,8 +181,8 @@ pub(in crate::cpu) fn adc_r8(ctx: &mut InstructionContext, reg: Reg8) -> u8 {
 /// ADC A, imm8 - Add immediate 8-bit value + Carry flag to A
 pub(in crate::cpu) fn adc_imm8(ctx: &mut InstructionContext) -> u8 {
     let a = ctx.cpu.regs.a();
-    let value = ctx.memory.read(ctx.cpu.pc);
-    ctx.cpu.inc_pc(1);
+    let value = ctx.memory.read(ctx.cpu.regs.pc());
+    ctx.cpu.regs.inc_pc(1);
     let carry_in = ctx.cpu.regs.carry_flag() as u8;
     let (intermediate, carry1) = a.overflowing_add(value);
     let (result, carry2) = intermediate.overflowing_add(carry_in);
@@ -229,8 +229,8 @@ pub(in crate::cpu) fn sub_r8(ctx: &mut InstructionContext, reg: Reg8) -> u8 {
 /// SUB imm8 - Subtract immediate 8-bit value from A
 pub(in crate::cpu) fn sub_imm8(ctx: &mut InstructionContext) -> u8 {
     let a = ctx.cpu.regs.a();
-    let value = ctx.memory.read(ctx.cpu.pc);
-    ctx.cpu.inc_pc(1);
+    let value = ctx.memory.read(ctx.cpu.regs.pc());
+    ctx.cpu.regs.inc_pc(1);
     let (result, borrow) = a.overflowing_sub(value);
     ctx.cpu.regs.set_a(result);
 
@@ -275,8 +275,8 @@ pub(in crate::cpu) fn sbc_r8(ctx: &mut InstructionContext, reg: Reg8) -> u8 {
 /// SBC A, imm8 - Subtract immediate 8-bit value + Carry flag from A
 pub(in crate::cpu) fn sbc_imm8(ctx: &mut InstructionContext) -> u8 {
     let a = ctx.cpu.regs.a();
-    let value = ctx.memory.read(ctx.cpu.pc);
-    ctx.cpu.inc_pc(1);
+    let value = ctx.memory.read(ctx.cpu.regs.pc());
+    ctx.cpu.regs.inc_pc(1);
     let carry_in = ctx.cpu.regs.carry_flag() as u8;
     let (intermediate, borrow1) = a.overflowing_sub(value);
     let (result, borrow2) = intermediate.overflowing_sub(carry_in);
@@ -323,8 +323,8 @@ pub(in crate::cpu) fn and_r8(ctx: &mut InstructionContext, reg: Reg8) -> u8 {
 /// AND A, imm8 - Logical AND immediate 8-bit value with A
 pub(in crate::cpu) fn and_imm8(ctx: &mut InstructionContext) -> u8 {
     let a = ctx.cpu.regs.a();
-    let value = ctx.memory.read(ctx.cpu.pc);
-    ctx.cpu.inc_pc(1);
+    let value = ctx.memory.read(ctx.cpu.regs.pc());
+    ctx.cpu.regs.inc_pc(1);
     let result = a & value;
     ctx.cpu.regs.set_a(result);
 
@@ -367,8 +367,8 @@ pub(in crate::cpu) fn xor_r8(ctx: &mut InstructionContext, reg: Reg8) -> u8 {
 /// XOR A, imm8 - Logical XOR immediate 8-bit value with A
 pub(in crate::cpu) fn xor_imm8(ctx: &mut InstructionContext) -> u8 {
     let a = ctx.cpu.regs.a();
-    let value = ctx.memory.read(ctx.cpu.pc);
-    ctx.cpu.inc_pc(1);
+    let value = ctx.memory.read(ctx.cpu.regs.pc());
+    ctx.cpu.regs.inc_pc(1);
     let result = a ^ value;
     ctx.cpu.regs.set_a(result);
 
@@ -411,8 +411,8 @@ pub(in crate::cpu) fn or_r8(ctx: &mut InstructionContext, reg: Reg8) -> u8 {
 /// OR A, imm8 - Logical OR immediate 8-bit value with A
 pub(in crate::cpu) fn or_imm8(ctx: &mut InstructionContext) -> u8 {
     let a = ctx.cpu.regs.a();
-    let value = ctx.memory.read(ctx.cpu.pc);
-    ctx.cpu.inc_pc(1);
+    let value = ctx.memory.read(ctx.cpu.regs.pc());
+    ctx.cpu.regs.inc_pc(1);
     let result = a | value;
     ctx.cpu.regs.set_a(result);
 
@@ -454,8 +454,8 @@ pub(in crate::cpu) fn cp_r8(ctx: &mut InstructionContext, reg: Reg8) -> u8 {
 /// CP A, imm8 - Compare immediate 8-bit value with A
 pub(in crate::cpu) fn cp_imm8(ctx: &mut InstructionContext) -> u8 {
     let a = ctx.cpu.regs.a();
-    let value = ctx.memory.read(ctx.cpu.pc);
-    ctx.cpu.inc_pc(1);
+    let value = ctx.memory.read(ctx.cpu.regs.pc());
+    ctx.cpu.regs.inc_pc(1);
     let (result, borrow) = a.overflowing_sub(value);
 
     ctx.cpu.regs.set_zero_flag(result == 0);

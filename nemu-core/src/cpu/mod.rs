@@ -12,8 +12,6 @@ use std::io::{BufWriter, Write};
 
 pub struct Cpu {
     pub(crate) regs: Registers,
-    sp: u16,                 // Stack Pointer
-    pc: u16,                 // Program Counter
     ime: InterruptMode,      // Interrupt Master Enable Flag
     halted: bool,
 
@@ -25,8 +23,6 @@ impl Cpu {
     pub fn new() -> Self {
         Self {
             regs: Registers::new(),
-            sp: 0xFFFE,
-            pc: 0x0100,
             ime: InterruptMode::Disabled,
 
             #[cfg(feature = "debug_logging")]
@@ -36,34 +32,7 @@ impl Cpu {
 
     pub fn reset(&mut self) {
         self.regs.reset();
-        self.sp = 0xFFFE;
-        self.pc = 0x0100;
         self.ime = InterruptMode::Disabled;
-    }
-
-    #[inline]
-    pub fn set_pc(&mut self, value: u16) {
-        self.pc = value;
-    }
-
-    #[inline]
-    pub fn inc_pc(&mut self, value: u16) {
-        self.pc = self.pc.wrapping_add(value);
-    }
-
-    #[inline]
-    pub fn set_sp(&mut self, value: u16) {
-        self.sp = value;
-    }
-
-    #[inline]
-    pub fn inc_sp(&mut self, value: u16) {
-        self.sp = self.sp.wrapping_add(value);
-    }
-
-    #[inline]
-    pub fn dec_sp(&mut self, value: u16) {
-        self.sp = self.sp.wrapping_sub(value);
     }
 
     pub fn step(&mut self, memory: &mut Memory) -> u8 {
@@ -74,12 +43,12 @@ impl Cpu {
             self.ime = InterruptMode::Enabled;
         }
 
-        let opcode = memory.read(self.pc);
-        self.inc_pc(1);
+        let opcode = memory.read(self.regs.pc());
+        self.regs.inc_pc(1);
 
         if opcode == 0xCB {
-            let cb_opcode = memory.read(self.pc);
-            self.inc_pc(1);
+            let cb_opcode = memory.read(self.regs.pc());
+            self.regs.inc_pc(1);
             return self.execute_cb(cb_opcode, memory);
         }
 
@@ -440,10 +409,10 @@ impl Cpu {
     #[cfg(feature = "debug_logging")]
     #[inline]
     fn write_log_line(&mut self, memory: &Memory) {
-        let pc0 = memory.read(self.pc);
-        let pc1 = memory.read(self.pc.wrapping_add(1));
-        let pc2 = memory.read(self.pc.wrapping_add(2));
-        let pc3 = memory.read(self.pc.wrapping_add(3));
+        let pc0 = memory.read(self.regs.pc());
+        let pc1 = memory.read(self.regs.pc().wrapping_add(1));
+        let pc2 = memory.read(self.regs.pc().wrapping_add(2));
+        let pc3 = memory.read(self.regs.pc().wrapping_add(3));
 
         writeln!(
             self.log_writer,
@@ -456,8 +425,8 @@ impl Cpu {
             self.regs.e(),
             self.regs.h(),
             self.regs.l(),
-            self.sp,
-            self.pc,
+            self.regs.sp(),
+            self.regs.pc(),
             pc0, pc1, pc2, pc3,
         ).unwrap();
     }

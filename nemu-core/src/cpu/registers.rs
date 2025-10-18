@@ -1,16 +1,16 @@
-#![allow(dead_code)]
-
 pub struct Registers {
     af: u16,    // Accumulator & Flags
     bc: u16,    // B & C
     de: u16,    // D & E
     hl: u16,    // H & L
+    sp: u16,    // Stack Pointer
+    pc: u16,    // Program Counter
 }
 
 #[derive(Clone, Copy)]
 pub enum Reg8 {
     A,
-    F,
+    // F not needed
     B,
     C,
     D,
@@ -25,6 +25,7 @@ pub enum Reg16 {
     BC,
     DE,
     HL,
+    // I use separate methods for SP and PC. Why? Made it that way and lazy to change now.
 }
 
 impl Registers {
@@ -34,6 +35,8 @@ impl Registers {
             bc: 0x0013,
             de: 0x00D8,
             hl: 0x014D,
+            sp: 0xFFFE,
+            pc: 0x0100,
         }
     }
     
@@ -42,6 +45,8 @@ impl Registers {
         self.bc = 0x0013;
         self.de = 0x00D8;
         self.hl = 0x014D;
+        self.sp = 0xFFFE;
+        self.pc = 0x0100;
     }
 
     #[inline]
@@ -225,7 +230,6 @@ impl Registers {
     pub fn read_reg8(&self, reg: Reg8) -> u8 {
         match reg {
             Reg8::A => self.a(),
-            Reg8::F => self.f(),
             Reg8::B => self.b(),
             Reg8::C => self.c(),
             Reg8::D => self.d(),
@@ -238,7 +242,6 @@ impl Registers {
     pub fn write_reg8(&mut self, reg: Reg8, value: u8) {
         match reg {
             Reg8::A => self.set_a(value),
-            Reg8::F => self.set_f(value),
             Reg8::B => self.set_b(value),
             Reg8::C => self.set_c(value),
             Reg8::D => self.set_d(value),
@@ -271,5 +274,42 @@ impl Registers {
             "A: {:02X} F: {:02X}\nB: {:02X} C: {:02X}\nD: {:02X} E: {:02X}\nH: {:02X} L: {:02X}",
             self.a(), self.f(), self.b(), self.c(), self.d(), self.e(), self.h(), self.l(),
         )
+    }
+
+    // Stack Pointer methods
+    #[inline]
+    pub fn sp(&self) -> u16 {
+        self.sp
+    }
+
+    #[inline]
+    pub fn set_sp(&mut self, value: u16) {
+        self.sp = value;
+    }
+
+    #[inline]
+    pub fn inc_sp(&mut self, value: u16) {
+        self.sp = self.sp.wrapping_add(value);
+    }
+
+    #[inline]
+    pub fn dec_sp(&mut self, value: u16) {
+        self.sp = self.sp.wrapping_sub(value);
+    }
+
+    // Program Counter methods
+    #[inline]
+    pub fn pc(&self) -> u16 {
+        self.pc
+    }
+
+    #[inline]
+    pub fn set_pc(&mut self, value: u16) {
+        self.pc = value;
+    }
+
+    #[inline]
+    pub fn inc_pc(&mut self, value: u16) {
+        self.pc = self.pc.wrapping_add(value);
     }
 }

@@ -10,8 +10,8 @@ pub(in crate::cpu) fn ld_r8_r8(ctx: &mut InstructionContext, dest: Reg8, src: Re
 
 /// LD r8, imm8 - Load immediate 8-bit value into 8-bit register
 pub(in crate::cpu) fn ld_r8_imm8(ctx: &mut InstructionContext, reg: Reg8) -> u8 {
-    let value = ctx.memory.read(ctx.cpu.pc);
-    ctx.cpu.inc_pc(1);
+    let value = ctx.memory.read(ctx.cpu.regs.pc());
+    ctx.cpu.regs.inc_pc(1);
     ctx.cpu.regs.write_reg8(reg, value);
     8
 }
@@ -26,8 +26,8 @@ pub(in crate::cpu) fn ld_r8_mem_r16(ctx: &mut InstructionContext, dest: Reg8, ad
 
 /// LD r16, imm16 - Load immediate 16-bit value into 16-bit register
 pub(in crate::cpu) fn ld_r16_imm16(ctx: &mut InstructionContext, reg: Reg16) -> u8 {
-    let value = ctx.memory.read_u16(ctx.cpu.pc);
-    ctx.cpu.inc_pc(2);
+    let value = ctx.memory.read_u16(ctx.cpu.regs.pc());
+    ctx.cpu.regs.inc_pc(2);
     ctx.cpu.regs.write_reg16(reg, value);
     12
 }
@@ -43,8 +43,8 @@ pub(in crate::cpu) fn ld_mem_r16_r8(ctx: &mut InstructionContext, addr_reg: Reg1
 /// LD (r16), imm8 - Store immediate 8-bit value at memory address in 16-bit register
 pub(in crate::cpu) fn ld_mem_r16_imm8(ctx: &mut InstructionContext, addr_reg: Reg16) -> u8 {
     let addr = ctx.cpu.regs.read_reg16(addr_reg);
-    let value = ctx.memory.read(ctx.cpu.pc);
-    ctx.cpu.inc_pc(1);
+    let value = ctx.memory.read(ctx.cpu.regs.pc());
+    ctx.cpu.regs.inc_pc(1);
     ctx.memory.write(addr, value);
     12
 }
@@ -87,25 +87,25 @@ pub(in crate::cpu) fn ld_a_mem_hld(ctx: &mut InstructionContext) -> u8 {
 
 /// LD (imm16), SP - Store SP at immediate 16-bit address
 pub(in crate::cpu) fn ld_mem_imm16_sp(ctx: &mut InstructionContext) -> u8 {
-    let addr = ctx.memory.read_u16(ctx.cpu.pc);
-    ctx.cpu.inc_pc(2);
-    ctx.memory.write_u16(addr, ctx.cpu.sp);
+    let addr = ctx.memory.read_u16(ctx.cpu.regs.pc());
+    ctx.cpu.regs.inc_pc(2);
+    ctx.memory.write_u16(addr, ctx.cpu.regs.sp());
     20
 }
 
 /// LD SP. imm16 - Load immediate 16-bit value into SP
 pub(in crate::cpu) fn ld_sp_imm16(ctx: &mut InstructionContext) -> u8 {
-    let value = ctx.memory.read_u16(ctx.cpu.pc);
-    ctx.cpu.inc_pc(2);
-    ctx.cpu.set_sp(value);
+    let value = ctx.memory.read_u16(ctx.cpu.regs.pc());
+    ctx.cpu.regs.inc_pc(2);
+    ctx.cpu.regs.set_sp(value);
     12
 }
 
 /// LD HL, SP+imm8 - Load SP plus immediate 8-bit signed value into HL
 pub(in crate::cpu) fn ld_hl_sp_imm8(ctx: &mut InstructionContext) -> u8 {
-    let offset = ctx.memory.read(ctx.cpu.pc) as i8;
-    ctx.cpu.inc_pc(1);
-    let sp = ctx.cpu.sp;
+    let offset = ctx.memory.read(ctx.cpu.regs.pc()) as i8;
+    ctx.cpu.regs.inc_pc(1);
+    let sp = ctx.cpu.regs.sp();
     let result = sp.wrapping_add(offset as u16);
     ctx.cpu.regs.set_hl(result);
 
@@ -119,14 +119,14 @@ pub(in crate::cpu) fn ld_hl_sp_imm8(ctx: &mut InstructionContext) -> u8 {
 /// LD SP, HL - Load HL into SP
 pub(in crate::cpu) fn ld_sp_hl(ctx: &mut InstructionContext) -> u8 {
     let hl = ctx.cpu.regs.hl();
-    ctx.cpu.set_sp(hl);
+    ctx.cpu.regs.set_sp(hl);
     8
 }
 
 /// LDH (imm8), A - Store A at address 0xFF00 + immediate 8-bit value
 pub(in crate::cpu) fn ldh_mem_imm8_a(ctx: &mut InstructionContext) -> u8 {
-    let offset = ctx.memory.read(ctx.cpu.pc);
-    ctx.cpu.inc_pc(1);
+    let offset = ctx.memory.read(ctx.cpu.regs.pc());
+    ctx.cpu.regs.inc_pc(1);
     let addr = 0xFF00u16.wrapping_add(offset as u16);
     let a = ctx.cpu.regs.a();
     ctx.memory.write(addr, a);
@@ -135,8 +135,8 @@ pub(in crate::cpu) fn ldh_mem_imm8_a(ctx: &mut InstructionContext) -> u8 {
 
 /// LDH A, (imm8) - Load A from address 0xFF00 + immediate 8-bit value
 pub(in crate::cpu) fn ldh_a_mem_imm8(ctx: &mut InstructionContext) -> u8 {
-    let offset = ctx.memory.read(ctx.cpu.pc);
-    ctx.cpu.inc_pc(1);
+    let offset = ctx.memory.read(ctx.cpu.regs.pc());
+    ctx.cpu.regs.inc_pc(1);
     let addr = 0xFF00u16.wrapping_add(offset as u16);
     let value = ctx.memory.read(addr);
     ctx.cpu.regs.set_a(value);
@@ -163,8 +163,8 @@ pub(in crate::cpu) fn ldh_a_mem_c(ctx: &mut InstructionContext) -> u8 {
 
 /// LD (imm16), A - Store A at immediate 16-bit address
 pub(in crate::cpu) fn ld_mem_imm16_a(ctx: &mut InstructionContext) -> u8 {
-    let addr = ctx.memory.read_u16(ctx.cpu.pc);
-    ctx.cpu.inc_pc(2);
+    let addr = ctx.memory.read_u16(ctx.cpu.regs.pc());
+    ctx.cpu.regs.inc_pc(2);
     let a = ctx.cpu.regs.a();
     ctx.memory.write(addr, a);
     16
@@ -172,8 +172,8 @@ pub(in crate::cpu) fn ld_mem_imm16_a(ctx: &mut InstructionContext) -> u8 {
 
 /// LD A, (imm16) - Load A from immediate 16-bit address
 pub(in crate::cpu) fn ld_a_mem_imm16(ctx: &mut InstructionContext) -> u8 {
-    let addr = ctx.memory.read_u16(ctx.cpu.pc);
-    ctx.cpu.inc_pc(2);
+    let addr = ctx.memory.read_u16(ctx.cpu.regs.pc());
+    ctx.cpu.regs.inc_pc(2);
     let value = ctx.memory.read(addr);
     ctx.cpu.regs.set_a(value);
     16

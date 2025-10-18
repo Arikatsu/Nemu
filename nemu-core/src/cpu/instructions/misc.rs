@@ -4,7 +4,7 @@ use crate::cpu::InterruptMode;
 /// STOP - Enter low power mode (halts CPU until an interrupt occurs)
 pub(in crate::cpu) fn stop(ctx: &mut InstructionContext) -> u8 {
     // stub implementation until i add it properly
-    ctx.cpu.inc_pc(1);
+    ctx.cpu.regs.inc_pc(1);
     4
 }
 
