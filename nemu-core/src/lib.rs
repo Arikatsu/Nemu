@@ -1,6 +1,7 @@
 mod memory;
 mod cpu;
-mod traits;
+// mod traits;
+mod context;
 
 pub struct Nemu {
     cpu: cpu::Cpu,
@@ -27,8 +28,12 @@ impl Nemu {
         self.memory.reset();
     }
 
-    pub fn step(&mut self) -> u8 {
-        self.cpu.step(&mut self.memory)
+    pub fn step(&mut self) {
+        let mut ctx = context::NemuContext {
+            memory: &mut self.memory,
+        };
+        
+        self.cpu.step(&mut ctx);
     }
 
     pub fn load_cartridge<P: AsRef<std::path::Path>>(&mut self, path: P) -> std::io::Result<()> {

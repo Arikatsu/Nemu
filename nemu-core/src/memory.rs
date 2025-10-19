@@ -48,10 +48,12 @@ impl Memory {
         self.cartridge[..len].copy_from_slice(&data[..len]);
     }
 
+    #[inline(always)]
     pub(crate) fn get_ie_if(&self) -> (u8, u8) {
         (self.ie, self.io[0x0F])
     }
 
+    #[inline(always)]
     pub(crate) fn read(&self, addr: u16) -> u8 {
         match addr {
             0x0000..=0x7FFF => self.cartridge[addr as usize],
@@ -72,6 +74,7 @@ impl Memory {
         }
     }
 
+    #[inline(always)]
     pub(crate) fn write(&mut self, addr: u16, data: u8) {
         //noinspection RsNonExhaustiveMatch
         match addr {
@@ -96,18 +99,5 @@ impl Memory {
             0xFF80..=0xFFFE => self.hram[(addr - 0xFF80) as usize] = data,
             0xFFFF => self.ie = data,
         }
-    }
-
-    pub(crate) fn read_u16(&self, addr: u16) -> u16 {
-        let low = self.read(addr) as u16;
-        let high = self.read(addr + 1) as u16;
-        (high << 8) | low
-    }
-
-    pub(crate) fn write_u16(&mut self, addr: u16, data: u16) {
-        let low = (data & 0x00FF) as u8;
-        let high = (data >> 8) as u8;
-        self.write(addr, low);
-        self.write(addr + 1, high);
     }
 }
