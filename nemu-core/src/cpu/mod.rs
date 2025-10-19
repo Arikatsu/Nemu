@@ -24,6 +24,7 @@ impl Cpu {
         Self {
             regs: Registers::new(),
             ime: InterruptMode::Disabled,
+            halted: false,
 
             #[cfg(feature = "debug_logging")]
             log_writer: BufWriter::with_capacity(64 * 1024, std::fs::File::create("cpu_trace.log").unwrap()),
@@ -33,11 +34,29 @@ impl Cpu {
     pub fn reset(&mut self) {
         self.regs.reset();
         self.ime = InterruptMode::Disabled;
+        self.halted = false;
     }
 
     pub fn step(&mut self, memory: &mut Memory) -> u8 {
         #[cfg(feature = "debug_logging")]
         self.write_log_line(memory);
+
+        let (ie, _if) = memory.get_ie_if();
+        let int_pending = (ie & _if) & 0x1F;
+
+        if let InterruptMode::Enabled = self.ime {
+            if int_pending != 0 {
+                return self.service_interrupt(int_pending, _if, memory);
+            }
+        }
+
+        if self.halted {
+            if int_pending != 0 {
+                self.halted = false;
+            } else {
+                return 4;
+            }
+        }
 
         if let InterruptMode::Pending = self.ime {
             self.ime = InterruptMode::Enabled;
@@ -55,7 +74,30 @@ impl Cpu {
         self.execute(opcode, memory)
     }
 
-    fn execute(&mut self, opcode: u8) -> u8 {
+    fn service_interrupt(&mut self, int_pending: u8, _if: u8, memory: &mut Memory) -> u8 {
+        for (bit, addr) in [
+            (0, 0x40), // V-Blank
+            (1, 0x48), // LCD STAT
+            (2, 0x50), // Timer
+            (3, 0x58), // Serial
+            (4, 0x60), // Joypad
+        ] {
+            if (int_pending & (1 << bit)) != 0 {
+                self.ime = InterruptMode::Disabled;
+                memory.write(0xFF0F, _if & !(1 << bit));
+
+                let sp = self.regs.sp().wrapping_sub(2);
+                memory.write_u16(sp, self.regs.pc());
+
+                self.regs.set_sp(sp);
+                self.regs.set_pc(addr);
+
+                self.halted = false;
+                break;
+            }
+        }
+        20
+    }
 
     fn execute(&mut self, opcode: u8, memory: &mut Memory) -> u8 {
         let mut ctx = InstructionContext {

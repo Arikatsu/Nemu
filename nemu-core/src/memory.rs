@@ -47,7 +47,10 @@ impl Memory {
         let len = data.len().min(self.cartridge.len());
         self.cartridge[..len].copy_from_slice(&data[..len]);
     }
-}
+
+    pub(crate) fn get_ie_if(&self) -> (u8, u8) {
+        (self.ie, self.io[0x0F])
+    }
 
     pub(crate) fn read(&self, addr: u16) -> u8 {
         match addr {

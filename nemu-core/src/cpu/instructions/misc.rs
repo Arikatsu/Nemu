@@ -9,8 +9,8 @@ pub(in crate::cpu) fn stop(ctx: &mut InstructionContext) -> u8 {
 }
 
 /// HALT - Halt CPU until an interrupt occurs
-pub(in crate::cpu) fn halt(_ctx: &mut InstructionContext) -> u8 {
-    // again, stub implementation for now
+pub(in crate::cpu) fn halt(ctx: &mut InstructionContext) -> u8 {
+    ctx.cpu.halted = true;
     4
 }
 
