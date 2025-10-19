@@ -1,27 +1,22 @@
-use super::InstructionContext;
-use crate::cpu::InterruptMode;
+use crate::cpu::{Cpu, InterruptMode};
 
 /// STOP - Enter low power mode (halts CPU until an interrupt occurs)
-pub(in crate::cpu) fn stop(ctx: &mut InstructionContext) -> u8 {
+pub(in crate::cpu) fn stop(cpu: &mut Cpu) {
     // stub implementation until i add it properly
-    ctx.cpu.regs.inc_pc(1);
-    4
+    cpu.regs.inc_pc(1);
 }
 
 /// HALT - Halt CPU until an interrupt occurs
-pub(in crate::cpu) fn halt(ctx: &mut InstructionContext) -> u8 {
-    ctx.cpu.halted = true;
-    4
+pub(in crate::cpu) fn halt(cpu: &mut Cpu) {
+    cpu.halted = true;
 }
 
 /// DI - Disable interrupts
-pub(in crate::cpu) fn di(ctx: &mut InstructionContext) -> u8 {
-    ctx.cpu.ime = InterruptMode::Disabled;
-    4
+pub(in crate::cpu) fn di(cpu: &mut Cpu) {
+    cpu.ime = InterruptMode::Disabled;
 }
 
 /// EI - Enable interrupts (actually delayed until next instruction, so set to Pending)
-pub(in crate::cpu) fn ei(ctx: &mut InstructionContext) -> u8 {
-    ctx.cpu.ime = InterruptMode::Pending;
-    4
+pub(in crate::cpu) fn ei(cpu: &mut Cpu) {
+    cpu.ime = InterruptMode::Pending;
 }

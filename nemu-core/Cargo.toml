@@ -5,9 +5,6 @@ edition = "2024"
 
 [dependencies]
 
-[features]
-debug_logging = []
-
 [profile.release]
 opt-level = 'z'
 lto = true
