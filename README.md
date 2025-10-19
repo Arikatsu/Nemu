@@ -18,8 +18,6 @@ Run tests:
 cargo test -p nemu-core --lib
 ```
 
-(no tests exist yet lol, getting some basic ops down first)
-
 ## Future Plans
 
 - Complete CPU implementation
