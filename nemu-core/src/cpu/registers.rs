@@ -1,8 +1,12 @@
 pub struct Registers {
-    af: u16,    // Accumulator & Flags
-    bc: u16,    // B & C
-    de: u16,    // D & E
-    hl: u16,    // H & L
+    a: u8,
+    f: u8,      // Flags
+    b: u8,
+    c: u8,
+    d: u8,
+    e: u8,
+    h: u8,
+    l: u8,
     sp: u16,    // Stack Pointer
     pc: u16,    // Program Counter
 }
@@ -31,152 +35,164 @@ pub enum Reg16 {
 impl Registers {
     pub(super) fn new() -> Self {
         Self {
-            af: 0x01B0,
-            bc: 0x0013,
-            de: 0x00D8,
-            hl: 0x014D,
+            a: 0x01,
+            f: 0xB0,
+            b: 0x00,
+            c: 0x13,
+            d: 0x00,
+            e: 0xD8,
+            h: 0x01,
+            l: 0x4D,
             sp: 0xFFFE,
             pc: 0x0100,
         }
     }
     
     pub(super) fn reset(&mut self) {
-        self.af = 0x01B0;
-        self.bc = 0x0013;
-        self.de = 0x00D8;
-        self.hl = 0x014D;
+        self.a = 0x01;
+        self.f = 0xB0;
+        self.b = 0x00;
+        self.c = 0x13;
+        self.d = 0x00;
+        self.e = 0xD8;
+        self.h = 0x01;
+        self.l = 0x4D;
         self.sp = 0xFFFE;
         self.pc = 0x0100;
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn af(&self) -> u16 {
-        self.af
+        ((self.a as u16) << 8) | (self.f as u16)
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn set_af(&mut self, value: u16) {
-        self.af = value & 0xFFF0; // Lower nibble of F is always 0
+        self.a = (value >> 8) as u8;
+        self.f = (value & 0x00FF) as u8 & 0xF0; // Lower nibble of F is always 0
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn bc(&self) -> u16 {
-        self.bc
+        ((self.b as u16) << 8) | (self.c as u16)
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn set_bc(&mut self, value: u16) {
-        self.bc = value;
+        self.b = (value >> 8) as u8;
+        self.c = (value & 0x00FF) as u8;
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn de(&self) -> u16 {
-        self.de
+        ((self.d as u16) << 8) | (self.e as u16)
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn set_de(&mut self, value: u16) {
-        self.de = value;
+        self.d = (value >> 8) as u8;
+        self.e = (value & 0x00FF) as u8;
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn hl(&self) -> u16 {
-        self.hl
+        ((self.h as u16) << 8) | (self.l as u16)
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn set_hl(&mut self, value: u16) {
-        self.hl = value;
+        self.h = (value >> 8) as u8;
+        self.l = (value & 0x00FF) as u8;
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn a(&self) -> u8 {
-        (self.af >> 8) as u8
+        self.a
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn set_a(&mut self, value: u8) {
-        self.af = (self.af & 0x00FF) | ((value as u16) << 8);
+        self.a = value;
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn f(&self) -> u8 {
-        (self.af & 0x00FF) as u8
+        self.f
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn set_f(&mut self, value: u8) {
-        self.af = (self.af & 0xFF00) | ((value as u16) & 0xF0); // Again, lower nibble of F is always 0
+        self.f = value & 0xF0;
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn b(&self) -> u8 {
-        (self.bc >> 8) as u8
+        self.b
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn set_b(&mut self, value: u8) {
-        self.bc = (self.bc & 0x00FF) | ((value as u16) << 8);
+        self.b = value;
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn c(&self) -> u8 {
-        (self.bc & 0x00FF) as u8
+        self.c
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn set_c(&mut self, value: u8) {
-        self.bc = (self.bc & 0xFF00) | (value as u16);
+        self.c = value;
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn d(&self) -> u8 {
-        (self.de >> 8) as u8
+        self.d
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn set_d(&mut self, value: u8) {
-        self.de = (self.de & 0x00FF) | ((value as u16) << 8);
+        self.d = value;
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn e(&self) -> u8 {
-        (self.de & 0x00FF) as u8
+        self.e
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn set_e(&mut self, value: u8) {
-        self.de = (self.de & 0xFF00) | (value as u16);
+        self.e = value;
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn h(&self) -> u8 {
-        (self.hl >> 8) as u8
+        self.h
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn set_h(&mut self, value: u8) {
-        self.hl = (self.hl & 0x00FF) | ((value as u16) << 8);
+        self.h = value;
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn l(&self) -> u8 {
-        (self.hl & 0x00FF) as u8
+        self.l
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn set_l(&mut self, value: u8) {
-        self.hl = (self.hl & 0xFF00) | (value as u16);
+        self.l = value;
     }
 
     // FLAGS
 
-    #[inline]
+    #[inline(always)]
     pub fn zero_flag(&self) -> bool {
         (self.f() & 0x80) != 0
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn set_zero_flag(&mut self, value: bool) {
         if value {
             self.set_f(self.f() | 0x80);
@@ -185,12 +201,12 @@ impl Registers {
         }
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn subtract_flag(&self) -> bool {
         (self.f() & 0x40) != 0
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn set_subtract_flag(&mut self, value: bool) {
         if value {
             self.set_f(self.f() | 0x40);
@@ -199,12 +215,12 @@ impl Registers {
         }
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn half_carry_flag(&self) -> bool {
         (self.f() & 0x20) != 0
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn set_half_carry_flag(&mut self, value: bool) {
         if value {
             self.set_f(self.f() | 0x20);
@@ -213,12 +229,12 @@ impl Registers {
         }
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn carry_flag(&self) -> bool {
         (self.f() & 0x10) != 0
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn set_carry_flag(&mut self, value: bool) {
         if value {
             self.set_f(self.f() | 0x10);
@@ -276,39 +292,37 @@ impl Registers {
         )
     }
 
-    // Stack Pointer methods
-    #[inline]
+    #[inline(always)]
     pub fn sp(&self) -> u16 {
         self.sp
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn set_sp(&mut self, value: u16) {
         self.sp = value;
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn inc_sp(&mut self, value: u16) {
         self.sp = self.sp.wrapping_add(value);
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn dec_sp(&mut self, value: u16) {
         self.sp = self.sp.wrapping_sub(value);
     }
 
-    // Program Counter methods
-    #[inline]
+    #[inline(always)]
     pub fn pc(&self) -> u16 {
         self.pc
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn set_pc(&mut self, value: u16) {
         self.pc = value;
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn inc_pc(&mut self, value: u16) {
         self.pc = self.pc.wrapping_add(value);
     }

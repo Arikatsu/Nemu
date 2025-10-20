@@ -20,7 +20,7 @@ cargo test -p nemu-core --lib
 
 ## Future Plans
 
-- Complete CPU implementation
+- Timer
 - Implement PPU and APU
 - Add save state support
 - Compile for multiple platforms (WASM, desktop, etc.)
