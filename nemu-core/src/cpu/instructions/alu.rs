@@ -1,4 +1,4 @@
-use crate::context::NemuContext;
+use crate::bus::Bus;
 use crate::cpu::Cpu;
 use crate::cpu::registers::{Reg8, Reg16};
 
@@ -14,24 +14,24 @@ pub(in crate::cpu) fn inc_r8(cpu: &mut Cpu, reg: Reg8) {
 }
 
 /// INC r16 - Increment 16-bit register
-pub(in crate::cpu) fn inc_r16(cpu: &mut Cpu, ctx: &mut NemuContext, reg: Reg16) {
+pub(in crate::cpu) fn inc_r16(cpu: &mut Cpu, bus: &mut Bus, reg: Reg16) {
     let value = cpu.regs.read_reg16(reg);
-    ctx.tick(1);
+    bus.tick(1);
     cpu.regs.write_reg16(reg, value.wrapping_add(1));
 }
 
 /// INC SP - Increment Stack Pointer
-pub(in crate::cpu) fn inc_sp(cpu: &mut Cpu, ctx: &mut NemuContext) {
-    ctx.tick(1);
+pub(in crate::cpu) fn inc_sp(cpu: &mut Cpu, bus: &mut Bus) {
     cpu.regs.inc_sp(1);
+    bus.tick(1);
 }
 
 /// INC (HL) - Increment value at address in HL
-pub(in crate::cpu) fn inc_mem_hl(cpu: &mut Cpu, ctx: &mut NemuContext) {
+pub(in crate::cpu) fn inc_mem_hl(cpu: &mut Cpu, bus: &mut Bus) {
     let addr = cpu.regs.hl();
-    let value = ctx.mem_read(addr);
+    let value = bus.read(addr);
     let result = value.wrapping_add(1);
-    ctx.mem_write(addr, result);
+    bus.write(addr, result);
 
     cpu.regs.set_zero_flag(result == 0);
     cpu.regs.set_subtract_flag(false);
@@ -50,24 +50,24 @@ pub(in crate::cpu) fn dec_r8(cpu: &mut Cpu, reg: Reg8) {
 }
 
 /// DEC r16 - Decrement 16-bit register
-pub(in crate::cpu) fn dec_r16(cpu: &mut Cpu, ctx: &mut NemuContext, reg: Reg16) {
+pub(in crate::cpu) fn dec_r16(cpu: &mut Cpu, bus: &mut Bus, reg: Reg16) {
     let value = cpu.regs.read_reg16(reg);
-    ctx.tick(1);
+    bus.tick(1);
     cpu.regs.write_reg16(reg, value.wrapping_sub(1));
 }
 
 /// DEC SP - Decrement Stack Pointer
-pub(in crate::cpu) fn dec_sp(cpu: &mut Cpu, ctx: &mut NemuContext) {
-    ctx.tick(1);
+pub(in crate::cpu) fn dec_sp(cpu: &mut Cpu, bus: &mut Bus) {
     cpu.regs.dec_sp(1);
+    bus.tick(1);
 }
 
 /// DEC (HL) - Decrement value at address in HL
-pub(in crate::cpu) fn dec_mem_hl(cpu: &mut Cpu, ctx: &mut NemuContext) {
+pub(in crate::cpu) fn dec_mem_hl(cpu: &mut Cpu, bus: &mut Bus) {
     let addr = cpu.regs.hl();
-    let value = ctx.mem_read(addr);
+    let value = bus.read(addr);
     let result = value.wrapping_sub(1);
-    ctx.mem_write(addr, result);
+    bus.write(addr, result);
 
     cpu.regs.set_zero_flag(result == 0);
     cpu.regs.set_subtract_flag(true);
@@ -89,12 +89,12 @@ pub(in crate::cpu) fn add_r8(cpu: &mut Cpu, reg: Reg8) {
 }
 
 /// ADD HL, r16 - Add 16-bit register value to HL
-pub(in crate::cpu) fn add_hl_r16(cpu: &mut Cpu, ctx: &mut NemuContext, reg: Reg16) {
+pub(in crate::cpu) fn add_hl_r16(cpu: &mut Cpu, bus: &mut Bus, reg: Reg16) {
     let hl = cpu.regs.hl();
     let value = cpu.regs.read_reg16(reg);
     let (result, carry) = hl.overflowing_add(value);
-    ctx.tick(1);
     cpu.regs.set_hl(result);
+    bus.tick(1);
 
     cpu.regs.set_subtract_flag(false);
     cpu.regs
@@ -103,9 +103,9 @@ pub(in crate::cpu) fn add_hl_r16(cpu: &mut Cpu, ctx: &mut NemuContext, reg: Reg1
 }
 
 /// ADD A, imm8 - Add immediate 8-bit value to A
-pub(in crate::cpu) fn add_imm8(cpu: &mut Cpu, ctx: &mut NemuContext) {
+pub(in crate::cpu) fn add_imm8(cpu: &mut Cpu, bus: &mut Bus) {
     let a = cpu.regs.a();
-    let value = ctx.mem_read(cpu.regs.pc());
+    let value = bus.read(cpu.regs.pc());
     cpu.regs.inc_pc(1);
     let (result, carry) = a.overflowing_add(value);
     cpu.regs.set_a(result);
@@ -118,10 +118,10 @@ pub(in crate::cpu) fn add_imm8(cpu: &mut Cpu, ctx: &mut NemuContext) {
 }
 
 /// ADD A, (HL) - Add value at address in HL to A
-pub(in crate::cpu) fn add_mem_hl(cpu: &mut Cpu, ctx: &mut NemuContext) {
+pub(in crate::cpu) fn add_mem_hl(cpu: &mut Cpu, bus: &mut Bus) {
     let a = cpu.regs.a();
     let addr = cpu.regs.hl();
-    let value = ctx.mem_read(addr);
+    let value = bus.read(addr);
     let (result, carry) = a.overflowing_add(value);
     cpu.regs.set_a(result);
 
@@ -133,12 +133,12 @@ pub(in crate::cpu) fn add_mem_hl(cpu: &mut Cpu, ctx: &mut NemuContext) {
 }
 
 /// ADD HL, SP - Add Stack Pointer to HL
-pub(in crate::cpu) fn add_hl_sp(cpu: &mut Cpu, ctx: &mut NemuContext) {
+pub(in crate::cpu) fn add_hl_sp(cpu: &mut Cpu, bus: &mut Bus) {
     let hl = cpu.regs.hl();
     let sp = cpu.regs.sp();
     let (result, carry) = hl.overflowing_add(sp);
-    ctx.tick(1);
     cpu.regs.set_hl(result);
+    bus.tick(1);
 
     cpu.regs.set_subtract_flag(false);
     cpu.regs
@@ -147,13 +147,13 @@ pub(in crate::cpu) fn add_hl_sp(cpu: &mut Cpu, ctx: &mut NemuContext) {
 }
 
 /// ADD SP, imm8 - Add immediate 8-bit signed value to Stack Pointer
-pub(in crate::cpu) fn add_sp_imm8(cpu: &mut Cpu, ctx: &mut NemuContext) {
+pub(in crate::cpu) fn add_sp_imm8(cpu: &mut Cpu, bus: &mut Bus) {
     let sp = cpu.regs.sp();
-    let offset = ctx.mem_read(cpu.regs.pc()) as i8;
+    let offset = bus.read(cpu.regs.pc()) as i8;
     cpu.regs.inc_pc(1);
     let result = sp.wrapping_add(offset as u16);
-    ctx.tick(2);
     cpu.regs.set_sp(result);
+    bus.tick(2);
 
     cpu.regs.set_zero_flag(false);
     cpu.regs.set_subtract_flag(false);
@@ -180,9 +180,9 @@ pub(in crate::cpu) fn adc_r8(cpu: &mut Cpu, reg: Reg8) {
 }
 
 /// ADC A, imm8 - Add immediate 8-bit value + Carry flag to A
-pub(in crate::cpu) fn adc_imm8(cpu: &mut Cpu, ctx: &mut NemuContext) {
+pub(in crate::cpu) fn adc_imm8(cpu: &mut Cpu, bus: &mut Bus) {
     let a = cpu.regs.a();
-    let value = ctx.mem_read(cpu.regs.pc());
+    let value = bus.read(cpu.regs.pc());
     cpu.regs.inc_pc(1);
     let carry_in = cpu.regs.carry_flag() as u8;
     let (intermediate, carry1) = a.overflowing_add(value);
@@ -197,10 +197,10 @@ pub(in crate::cpu) fn adc_imm8(cpu: &mut Cpu, ctx: &mut NemuContext) {
 }
 
 /// ADC A, (HL) - Add value at address in HL + Carry flag to A
-pub(in crate::cpu) fn adc_mem_hl(cpu: &mut Cpu, ctx: &mut NemuContext) {
+pub(in crate::cpu) fn adc_mem_hl(cpu: &mut Cpu, bus: &mut Bus) {
     let a = cpu.regs.a();
     let addr = cpu.regs.hl();
-    let value = ctx.mem_read(addr);
+    let value = bus.read(addr);
     let carry_in = cpu.regs.carry_flag() as u8;
     let (intermediate, carry1) = a.overflowing_add(value);
     let (result, carry2) = intermediate.overflowing_add(carry_in);
@@ -227,9 +227,9 @@ pub(in crate::cpu) fn sub_r8(cpu: &mut Cpu, reg: Reg8) {
 }
 
 /// SUB imm8 - Subtract immediate 8-bit value from A
-pub(in crate::cpu) fn sub_imm8(cpu: &mut Cpu, ctx: &mut NemuContext) {
+pub(in crate::cpu) fn sub_imm8(cpu: &mut Cpu, bus: &mut Bus) {
     let a = cpu.regs.a();
-    let value = ctx.mem_read(cpu.regs.pc());
+    let value = bus.read(cpu.regs.pc());
     cpu.regs.inc_pc(1);
     let (result, borrow) = a.overflowing_sub(value);
     cpu.regs.set_a(result);
@@ -241,10 +241,10 @@ pub(in crate::cpu) fn sub_imm8(cpu: &mut Cpu, ctx: &mut NemuContext) {
 }
 
 /// SUB (HL) - Subtract value at address in HL from A
-pub(in crate::cpu) fn sub_mem_hl(cpu: &mut Cpu, ctx: &mut NemuContext) {
+pub(in crate::cpu) fn sub_mem_hl(cpu: &mut Cpu, bus: &mut Bus) {
     let a = cpu.regs.a();
     let addr = cpu.regs.hl();
-    let value = ctx.mem_read(addr);
+    let value = bus.read(addr);
     let (result, borrow) = a.overflowing_sub(value);
     cpu.regs.set_a(result);
 
@@ -271,9 +271,9 @@ pub(in crate::cpu) fn sbc_r8(cpu: &mut Cpu, reg: Reg8) {
 }
 
 /// SBC A, imm8 - Subtract immediate 8-bit value + Carry flag from A
-pub(in crate::cpu) fn sbc_imm8(cpu: &mut Cpu, ctx: &mut NemuContext) {
+pub(in crate::cpu) fn sbc_imm8(cpu: &mut Cpu, bus: &mut Bus) {
     let a = cpu.regs.a();
-    let value = ctx.mem_read(cpu.regs.pc());
+    let value = bus.read(cpu.regs.pc());
     cpu.regs.inc_pc(1);
     let carry_in = cpu.regs.carry_flag() as u8;
     let (intermediate, borrow1) = a.overflowing_sub(value);
@@ -288,10 +288,10 @@ pub(in crate::cpu) fn sbc_imm8(cpu: &mut Cpu, ctx: &mut NemuContext) {
 }
 
 /// SBC A, (HL) - Subtract value at address in HL + Carry flag from A
-pub(in crate::cpu) fn sbc_mem_hl(cpu: &mut Cpu, ctx: &mut NemuContext) {
+pub(in crate::cpu) fn sbc_mem_hl(cpu: &mut Cpu, bus: &mut Bus) {
     let a = cpu.regs.a();
     let addr = cpu.regs.hl();
-    let value = ctx.mem_read(addr);
+    let value = bus.read(addr);
     let carry_in = cpu.regs.carry_flag() as u8;
     let (intermediate, borrow1) = a.overflowing_sub(value);
     let (result, borrow2) = intermediate.overflowing_sub(carry_in);
@@ -318,9 +318,9 @@ pub(in crate::cpu) fn and_r8(cpu: &mut Cpu, reg: Reg8) {
 }
 
 /// AND A, imm8 - Logical AND immediate 8-bit value with A
-pub(in crate::cpu) fn and_imm8(cpu: &mut Cpu, ctx: &mut NemuContext) {
+pub(in crate::cpu) fn and_imm8(cpu: &mut Cpu, bus: &mut Bus) {
     let a = cpu.regs.a();
-    let value = ctx.mem_read(cpu.regs.pc());
+    let value = bus.read(cpu.regs.pc());
     cpu.regs.inc_pc(1);
     let result = a & value;
     cpu.regs.set_a(result);
@@ -332,10 +332,10 @@ pub(in crate::cpu) fn and_imm8(cpu: &mut Cpu, ctx: &mut NemuContext) {
 }
 
 /// AND A, (HL) - Logical AND value at address in HL with A
-pub(in crate::cpu) fn and_mem_hl(cpu: &mut Cpu, ctx: &mut NemuContext) {
+pub(in crate::cpu) fn and_mem_hl(cpu: &mut Cpu, bus: &mut Bus) {
     let a = cpu.regs.a();
     let addr = cpu.regs.hl();
-    let value = ctx.mem_read(addr);
+    let value = bus.read(addr);
     let result = a & value;
     cpu.regs.set_a(result);
 
@@ -359,9 +359,9 @@ pub(in crate::cpu) fn xor_r8(cpu: &mut Cpu, reg: Reg8) {
 }
 
 /// XOR A, imm8 - Logical XOR immediate 8-bit value with A
-pub(in crate::cpu) fn xor_imm8(cpu: &mut Cpu, ctx: &mut NemuContext) {
+pub(in crate::cpu) fn xor_imm8(cpu: &mut Cpu, bus: &mut Bus) {
     let a = cpu.regs.a();
-    let value = ctx.mem_read(cpu.regs.pc());
+    let value = bus.read(cpu.regs.pc());
     cpu.regs.inc_pc(1);
     let result = a ^ value;
     cpu.regs.set_a(result);
@@ -373,10 +373,10 @@ pub(in crate::cpu) fn xor_imm8(cpu: &mut Cpu, ctx: &mut NemuContext) {
 }
 
 /// XOR A, (HL) - Logical XOR value at address in HL with A
-pub(in crate::cpu) fn xor_mem_hl(cpu: &mut Cpu, ctx: &mut NemuContext) {
+pub(in crate::cpu) fn xor_mem_hl(cpu: &mut Cpu, bus: &mut Bus) {
     let a = cpu.regs.a();
     let addr = cpu.regs.hl();
-    let value = ctx.mem_read(addr);
+    let value = bus.read(addr);
     let result = a ^ value;
     cpu.regs.set_a(result);
 
@@ -400,9 +400,9 @@ pub(in crate::cpu) fn or_r8(cpu: &mut Cpu, reg: Reg8) {
 }
 
 /// OR A, imm8 - Logical OR immediate 8-bit value with A
-pub(in crate::cpu) fn or_imm8(cpu: &mut Cpu, ctx: &mut NemuContext) {
+pub(in crate::cpu) fn or_imm8(cpu: &mut Cpu, bus: &mut Bus) {
     let a = cpu.regs.a();
-    let value = ctx.mem_read(cpu.regs.pc());
+    let value = bus.read(cpu.regs.pc());
     cpu.regs.inc_pc(1);
     let result = a | value;
     cpu.regs.set_a(result);
@@ -414,10 +414,10 @@ pub(in crate::cpu) fn or_imm8(cpu: &mut Cpu, ctx: &mut NemuContext) {
 }
 
 /// OR A, (HL) - Logical OR value at address in HL with A
-pub(in crate::cpu) fn or_mem_hl(cpu: &mut Cpu, ctx: &mut NemuContext) {
+pub(in crate::cpu) fn or_mem_hl(cpu: &mut Cpu, bus: &mut Bus) {
     let a = cpu.regs.a();
     let addr = cpu.regs.hl();
-    let value = ctx.mem_read(addr);
+    let value = bus.read(addr);
     let result = a | value;
     cpu.regs.set_a(result);
 
@@ -440,9 +440,9 @@ pub(in crate::cpu) fn cp_r8(cpu: &mut Cpu, reg: Reg8) {
 }
 
 /// CP A, imm8 - Compare immediate 8-bit value with A
-pub(in crate::cpu) fn cp_imm8(cpu: &mut Cpu, ctx: &mut NemuContext) {
+pub(in crate::cpu) fn cp_imm8(cpu: &mut Cpu, bus: &mut Bus) {
     let a = cpu.regs.a();
-    let value = ctx.mem_read(cpu.regs.pc());
+    let value = bus.read(cpu.regs.pc());
     cpu.regs.inc_pc(1);
     let (result, borrow) = a.overflowing_sub(value);
 
@@ -453,10 +453,10 @@ pub(in crate::cpu) fn cp_imm8(cpu: &mut Cpu, ctx: &mut NemuContext) {
 }
 
 /// CP A, (HL) - Compare value at address in HL with A
-pub(in crate::cpu) fn cp_mem_hl(cpu: &mut Cpu, ctx: &mut NemuContext) {
+pub(in crate::cpu) fn cp_mem_hl(cpu: &mut Cpu, bus: &mut Bus) {
     let a = cpu.regs.a();
     let addr = cpu.regs.hl();
-    let value = ctx.mem_read(addr);
+    let value = bus.read(addr);
     let (result, borrow) = a.overflowing_sub(value);
 
     cpu.regs.set_zero_flag(result == 0);

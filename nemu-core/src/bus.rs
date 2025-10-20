@@ -1,4 +1,4 @@
-pub(crate) struct Memory {
+pub(crate) struct Bus {
     cartridge: [u8; 0x8000], // 32KB Cartridge ROM
     vram: [u8; 0x2000],      // 8KB Video RAM
     eram: [u8; 0x2000],      // 8KB External RAM
@@ -11,7 +11,7 @@ pub(crate) struct Memory {
     pub(crate) serial_output: String,
 }
 
-impl Memory {
+impl Bus {
     pub(crate) fn new() -> Self {
         Self {
             cartridge: [0; 0x8000],
@@ -48,6 +48,10 @@ impl Memory {
         self.cartridge[..len].copy_from_slice(&data[..len]);
     }
 
+    pub(crate) fn tick(&mut self, ticks: u8) {
+        self.timer.update(ticks);
+    }
+
     #[inline(always)]
     pub(crate) fn get_ie_if(&self) -> (u8, u8) {
         (self.ie, self.io[0x0F])
@@ -76,7 +80,6 @@ impl Memory {
 
     #[inline(always)]
     pub(crate) fn write(&mut self, addr: u16, data: u8) {
-        //noinspection RsNonExhaustiveMatch
         match addr {
             0x0000..=0x7FFF => { /* ROM area (no write) */ }
             0x8000..=0x9FFF => self.vram[(addr - 0x8000) as usize] = data,
@@ -99,5 +102,19 @@ impl Memory {
             0xFF80..=0xFFFE => self.hram[(addr - 0xFF80) as usize] = data,
             0xFFFF => self.ie = data,
         }
+    }
+
+    #[inline(always)]
+    pub(crate) fn read_u16(&mut self, addr: u16) -> u16 {
+        let low = self.read(addr) as u16;
+        let high = self.read(addr + 1) as u16;
+        (high << 8) | low
+    }
+
+    #[inline(always)]
+    pub(crate) fn write_u16(&mut self, addr: u16, data: u16) {
+        let [lo, hi] = data.to_le_bytes();
+        self.write(addr, lo);
+        self.write(addr + 1, hi);
     }
 }

@@ -1,18 +1,19 @@
-mod memory;
+mod bus;
 mod cpu;
 // mod traits;
-mod context;
+mod timer;
 
 pub struct Nemu {
     cpu: cpu::Cpu,
-    memory: memory::Memory,
+    bus: bus::Bus,
 }
 
 impl Default for Nemu {
     fn default() -> Self {
-        let memory = memory::Memory::new();
-        let cpu = cpu::Cpu::new();
-        Self { memory, cpu }
+        Self {
+            cpu: cpu::Cpu::new(),
+            bus: bus::Bus::new(),
+        }
     }
 }
 
@@ -25,20 +26,16 @@ impl Nemu {
 
     pub fn reset(&mut self) {
         self.cpu.reset();
-        self.memory.reset();
+        self.bus.reset();
     }
 
     pub fn step(&mut self) {
-        let mut ctx = context::NemuContext {
-            memory: &mut self.memory,
-        };
-        
-        self.cpu.step(&mut ctx);
+        self.cpu.step(&mut self.bus);
     }
 
     pub fn load_cartridge<P: AsRef<std::path::Path>>(&mut self, path: P) -> std::io::Result<()> {
         let data = std::fs::read(path)?;
-        self.memory.load_cartridge_bytes(&data);
+        self.bus.load_cartridge_bytes(&data);
         Ok(())
     }
 
@@ -58,7 +55,7 @@ mod tests {
             nemu.step();
 
             if i % 10000 == 0 {
-                let output = &nemu.memory.serial_output;
+                let output = &nemu.bus.serial_output;
                 if output.contains("Passed") {
                     return true;
                 } else if output.contains("Failed") {
