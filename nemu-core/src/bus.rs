@@ -1,3 +1,5 @@
+use crate::timer::Timer;
+
 pub(crate) struct Bus {
     cartridge: [u8; 0x8000], // 32KB Cartridge ROM
     vram: [u8; 0x2000],      // 8KB Video RAM
@@ -7,6 +9,8 @@ pub(crate) struct Bus {
     io: [u8; 0x80],          // I/O Registers
     hram: [u8; 0x7F],        // High RAM
     ie: u8,                  // Interrupt Enable Register
+    timer: Timer,
+
     #[cfg(test)]
     pub(crate) serial_output: String,
 }
@@ -22,6 +26,7 @@ impl Bus {
             io: [0; 0x80],
             hram: [0; 0x7F],
             ie: 0,
+            timer: Timer::new(),
             #[cfg(test)]
             serial_output: String::new(),
         }
@@ -37,6 +42,8 @@ impl Bus {
         self.hram = [0; 0x7F];
         self.ie = 0;
 
+        self.timer.reset();
+
         #[cfg(test)]
         {
             self.serial_output.clear();
@@ -48,8 +55,11 @@ impl Bus {
         self.cartridge[..len].copy_from_slice(&data[..len]);
     }
 
-    pub(crate) fn tick(&mut self, ticks: u8) {
-        self.timer.update(ticks);
+    pub(crate) fn tick(&mut self, cycles: u8) {
+        let interrupt = self.timer.update(cycles);
+        if interrupt {
+            self.io[0x0F] |= 0x04;
+        }
     }
 
     #[inline(always)]
@@ -58,8 +68,8 @@ impl Bus {
     }
 
     #[inline(always)]
-    pub(crate) fn read(&self, addr: u16) -> u8 {
-        match addr {
+    pub(crate) fn read(&mut self, addr: u16) -> u8 {
+        let data = match addr {
             0x0000..=0x7FFF => self.cartridge[addr as usize],
             0x8000..=0x9FFF => self.vram[(addr - 0x8000) as usize],
             0xA000..=0xBFFF => self.eram[(addr - 0xA000) as usize],
@@ -67,17 +77,17 @@ impl Bus {
             0xE000..=0xFDFF => self.wram[(addr - 0xE000) as usize], // Echo RAM
             0xFE00..=0xFE9F => self.oam[(addr - 0xFE00) as usize],
             0xFEA0..=0xFEFF => 0, // unusable
-            #[cfg(feature = "debug_logging")]
-            0xFF44 => {
-                // LY register
-                0x90
-            }
+            0xFF04..=0xFF07 => self.timer.read(addr),
+            0xFF44 => 0x90, // LY register (stubbed)
             0xFF00..=0xFF7F => self.io[(addr - 0xFF00) as usize],
             0xFF80..=0xFFFE => self.hram[(addr - 0xFF80) as usize],
             0xFFFF => self.ie,
-        }
-    }
+        };
 
+        self.tick(1);
+        data
+    }
+    
     #[inline(always)]
     pub(crate) fn write(&mut self, addr: u16, data: u8) {
         match addr {
@@ -98,10 +108,13 @@ impl Bus {
                     self.io[0x02] = 0;
                 }
             }
+            0xFF04..=0xFF07 => self.timer.write(addr, data),
             0xFF00..=0xFF7F => self.io[(addr - 0xFF00) as usize] = data,
             0xFF80..=0xFFFE => self.hram[(addr - 0xFF80) as usize] = data,
             0xFFFF => self.ie = data,
-        }
+        };
+
+        self.tick(1);
     }
 
     #[inline(always)]

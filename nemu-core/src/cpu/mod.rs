@@ -9,7 +9,7 @@ use crate::bus::Bus;
 
 pub struct Cpu {
     pub(crate) regs: Registers,
-    ime: InterruptMode,      // Interrupt Master Enable Flag
+    ime: InterruptMode,
     halted: bool,
 }
 
@@ -32,17 +32,19 @@ impl Cpu {
         let (ie, _if) = bus.get_ie_if();
         let int_pending = (ie & _if) & 0x1F;
 
+        if self.halted {
+            bus.tick(1);
+
+            if int_pending != 0 {
+                self.halted = false;
+            }
+
+            return;
+        }
+
         if let InterruptMode::Enabled = self.ime {
             if int_pending != 0 {
                 return self.service_interrupt(int_pending, _if, bus);
-            }
-        }
-
-        if self.halted {
-            if int_pending != 0 {
-                self.halted = false;
-            } else {
-                return;
             }
         }
 
