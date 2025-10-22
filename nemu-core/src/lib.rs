@@ -2,6 +2,7 @@ mod bus;
 mod cpu;
 // mod traits;
 mod timer;
+mod ppu;
 
 pub struct Nemu {
     cpu: cpu::Cpu,
