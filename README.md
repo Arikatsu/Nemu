@@ -20,7 +20,8 @@ cargo test -p nemu-core --lib
 
 ## Future Plans
 
-- Timer
-- Implement PPU and APU
+- Implement PPU
+- Implement Joypad
+- Implement Serial
 - Add save state support
 - Compile for multiple platforms (WASM, desktop, etc.)
