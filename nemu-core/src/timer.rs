@@ -1,3 +1,5 @@
+use crate::interrupts::INT_TIMER;
+
 pub struct Timer {
     tima: u8,
     tma: u8,
@@ -25,14 +27,14 @@ impl Timer {
         self.overflow_cycles = 0;
     }
 
-    pub(crate) fn update(&mut self, cycles: u8) -> bool {
-        let mut interrupt = false;
+    pub(crate) fn update(&mut self, cycles: u8) -> u8 {
+        let mut irq_mask = 0;
 
         if self.overflow_cycles > 0 {
             self.overflow_cycles = self.overflow_cycles.saturating_sub(cycles * 4);
             if self.overflow_cycles == 0 {
                 self.tima = self.tma;
-                interrupt = true;
+                irq_mask = INT_TIMER;
             }
         }
 
@@ -52,7 +54,7 @@ impl Timer {
             }
         }
 
-        interrupt
+        irq_mask
     }
 
     fn increment_tima(&mut self) {

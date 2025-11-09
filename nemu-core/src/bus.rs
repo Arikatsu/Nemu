@@ -55,11 +55,10 @@ impl Bus {
     }
 
     pub(crate) fn tick(&mut self, cycles: u8) {
-        self.ppu.tick(cycles);
-        let interrupt = self.timer.update(cycles);
-        if interrupt {
-            self.io[0x0F] |= 0x04;
-        }
+        let ppu_irq_mask = self.ppu.tick(cycles);
+        let timer_irq_mask = self.timer.update(cycles);
+
+        self.io[0x0F] |= ppu_irq_mask | timer_irq_mask;
     }
 
     #[inline(always)]

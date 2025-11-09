@@ -1,7 +1,4 @@
-pub(crate) struct PpuEvents {
-    pub vblank_irq: bool,
-    pub stat_irq: bool,
-}
+use crate::interrupts::{INT_LCDSTAT, INT_VBLANK};
 
 #[derive(Debug, Copy, Clone)]
 enum Mode {
@@ -44,12 +41,9 @@ impl Ppu {
         self.oam = [0; 0xA0];
     }
 
-    pub(crate) fn tick(&mut self, cycles: u8) -> PpuEvents {
+    pub(crate) fn tick(&mut self, cycles: u8) -> u8 {
         let mut ticks = (cycles * 4) as u16;
-        let mut events = PpuEvents {
-            vblank_irq: false,
-            stat_irq: false,
-        };
+        let mut irq_mask: u8 = 0;
 
         while ticks > 0 {
             let current_mode_dots = self.current_mode_dots();
@@ -57,16 +51,20 @@ impl Ppu {
                 self.dots += current_mode_dots;
                 ticks -= current_mode_dots;
                 let (vblank, stat) = self.switch_modes();
-                events.vblank_irq |= vblank;
-                events.stat_irq |= stat;
+                if vblank {
+                    irq_mask |= INT_VBLANK;
+                }
+                if stat {
+                    irq_mask |= INT_LCDSTAT;
+                }
                 self.dots = 0;
             } else {
                 self.dots += ticks;
                 ticks = 0;
             }
         }
-
-        events
+        
+        irq_mask
     }
 
     #[inline(always)]

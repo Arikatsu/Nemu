@@ -3,6 +3,7 @@ mod cpu;
 // mod traits;
 mod timer;
 mod ppu;
+mod interrupts;
 
 pub struct Nemu {
     cpu: cpu::Cpu,
