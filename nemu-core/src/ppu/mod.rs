@@ -43,20 +43,25 @@ impl Ppu {
         self.oam = [0; 0xA0];
     }
 
-    pub(crate) fn tick(&mut self, cycles: u8) -> u8 {
-        let mut ticks = (cycles * 4) as u16;
+    pub(crate) fn update(&mut self, cycles: u8) -> u8 {
         let mut irq_mask: u8 = 0;
+        self.dots += (cycles * 4) as u16;
 
-        while ticks > 0 {
-            let current_mode_dots = self.current_mode_dots();
-            if ticks >= current_mode_dots {
-                self.dots += current_mode_dots;
-                ticks -= current_mode_dots;
-                irq_mask |= self.switch_modes();
-                self.dots = 0;
-            } else {
-                self.dots += ticks;
-                ticks = 0;
+        loop {
+            let threshold = match self.mode {
+                Mode::OAMSearch => 80,
+                Mode::PixelTransfer => 80 + 172,
+                Mode::HBlank => 456,
+                Mode::VBlank => 456,        // each line in vblank is 456 dots
+            };
+
+            if self.dots < threshold {
+                break;
+            }
+
+            irq_mask |= self.switch_modes();
+            if self.dots >= 456 {
+                self.dots -= 456;
             }
         }
 
@@ -88,15 +93,7 @@ impl Ppu {
         }
     }
 
-    fn current_mode_dots(&self) -> u16 {
-        match self.mode {
-            Mode::OAMSearch => 80 - self.dots,
-            Mode::PixelTransfer => 172 - self.dots,
-            Mode::HBlank => 204 - self.dots,
-            Mode::VBlank => 456 - self.dots,
-        }
-    }
-
+    #[inline(always)]
     fn switch_modes(&mut self) -> u8 {
         let mut irq_mask: u8 = 0;
 

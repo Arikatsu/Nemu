@@ -55,7 +55,7 @@ impl Bus {
     }
 
     pub(crate) fn tick(&mut self, cycles: u8) {
-        let ppu_irq_mask = self.ppu.tick(cycles);
+        let ppu_irq_mask = self.ppu.update(cycles);
         let timer_irq_mask = self.timer.update(cycles);
 
         self.io[0x0F] |= ppu_irq_mask | timer_irq_mask;
@@ -68,7 +68,9 @@ impl Bus {
 
     #[inline(always)]
     pub(crate) fn read(&mut self, addr: u16) -> u8 {
-        let data = match addr {
+        self.tick(1);
+
+        match addr {
             0x0000..=0x7FFF => self.cartridge[addr as usize],
             0x8000..=0x9FFF => self.ppu.read(addr),
             0xA000..=0xBFFF => self.eram[(addr - 0xA000) as usize],
@@ -83,14 +85,13 @@ impl Bus {
             0xFF00..=0xFF7F => self.io[(addr - 0xFF00) as usize],
             0xFF80..=0xFFFE => self.hram[(addr - 0xFF80) as usize],
             0xFFFF => self.ie,
-        };
-
-        self.tick(1);
-        data
+        }
     }
     
     #[inline(always)]
     pub(crate) fn write(&mut self, addr: u16, data: u8) {
+        self.tick(1);
+
         match addr {
             0x0000..=0x7FFF => { /* ROM area (no write) */ }
             0x8000..=0x9FFF => self.ppu.write(addr, data),
@@ -116,8 +117,6 @@ impl Bus {
             0xFF80..=0xFFFE => self.hram[(addr - 0xFF80) as usize] = data,
             0xFFFF => self.ie = data,
         };
-
-        self.tick(1);
     }
 
     #[inline(always)]
