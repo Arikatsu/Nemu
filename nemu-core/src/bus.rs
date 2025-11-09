@@ -78,7 +78,9 @@ impl Bus {
             0xFE00..=0xFE9F => self.ppu.read(addr),
             0xFEA0..=0xFEFF => 0, // unusable
             0xFF04..=0xFF07 => self.timer.read(addr),
-            0xFF44 => 0x90, // LY register (stubbed)
+            0xFF41 => self.ppu.read(addr), // STAT register
+            0xFF44 => self.ppu.read(addr), // LY register
+            0xFF45 => self.ppu.read(addr), // LYC register
             0xFF00..=0xFF7F => self.io[(addr - 0xFF00) as usize],
             0xFF80..=0xFFFE => self.hram[(addr - 0xFF80) as usize],
             0xFFFF => self.ie,
@@ -109,6 +111,8 @@ impl Bus {
                 }
             }
             0xFF04..=0xFF07 => self.timer.write(addr, data),
+            0xFF41 => self.ppu.write(addr, data), // STAT register
+            0xFF45 => self.ppu.write(addr, data), // LYC register
             0xFF00..=0xFF7F => self.io[(addr - 0xFF00) as usize] = data,
             0xFF80..=0xFFFE => self.hram[(addr - 0xFF80) as usize] = data,
             0xFFFF => self.ie = data,
