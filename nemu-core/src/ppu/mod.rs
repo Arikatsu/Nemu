@@ -1,12 +1,14 @@
-use crate::interrupts::{INT_LCDSTAT, INT_VBLANK};
+mod utils;
 
-#[derive(Debug, Copy, Clone)]
-enum Mode {
-    HBlank = 0x00,
-    VBlank = 0x01,
-    OAMSearch = 0x02,
-    PixelTransfer = 0x03,
-}
+use utils::{
+    Mode,
+    STAT_HBLANK_IRQ,
+    STAT_VBLANK_IRQ,
+    STAT_OAM_IRQ,
+    STAT_LYC_IRQ,
+    STAT_LYC_EQ_LY
+};
+use crate::interrupts::{INT_LCDSTAT, INT_VBLANK};
 
 pub struct Ppu {
     scanline: u8,
@@ -50,20 +52,14 @@ impl Ppu {
             if ticks >= current_mode_dots {
                 self.dots += current_mode_dots;
                 ticks -= current_mode_dots;
-                let (vblank, stat) = self.switch_modes();
-                if vblank {
-                    irq_mask |= INT_VBLANK;
-                }
-                if stat {
-                    irq_mask |= INT_LCDSTAT;
-                }
+                irq_mask |= self.switch_modes();
                 self.dots = 0;
             } else {
                 self.dots += ticks;
                 ticks = 0;
             }
         }
-        
+
         irq_mask
     }
 
@@ -84,7 +80,9 @@ impl Ppu {
         match addr {
             0x8000..=0x9FFF => self.vram[(addr - 0x8000) as usize] = value,
             0xFE00..=0xFE9F => self.oam[(addr - 0xFE00) as usize] = value,
-            0xFF41 => { self.stat = (value & 0xF8) | (self.stat & 0x07); },
+            0xFF41 => {
+                self.stat = (value & 0xF8) | (self.stat & 0x07);
+            }
             0xFF45 => self.lyc = value,
             _ => {}
         }
@@ -99,9 +97,8 @@ impl Ppu {
         }
     }
 
-    fn switch_modes(&mut self) -> (bool, bool) {
-        let mut vblank_irq = false;
-        let mut stat_irq = false;
+    fn switch_modes(&mut self) -> u8 {
+        let mut irq_mask: u8 = 0;
 
         match self.mode {
             Mode::OAMSearch => {
@@ -110,29 +107,29 @@ impl Ppu {
             Mode::PixelTransfer => {
                 self.mode = Mode::HBlank;
 
-                if (self.stat & 0b0000_1000) != 0 {
-                    stat_irq = true;
+                if (self.stat & STAT_HBLANK_IRQ) != 0 {
+                    irq_mask |= INT_LCDSTAT;
                 }
             }
             Mode::HBlank => {
                 self.scanline += 1;
 
                 if self.compare_lyc() {
-                    stat_irq = true;
+                    irq_mask |= INT_LCDSTAT;
                 }
 
                 if self.scanline < 144 {
                     self.mode = Mode::OAMSearch;
 
-                    if (self.stat & 0b0010_0000) != 0 {
-                        stat_irq = true;
+                    if (self.stat & STAT_OAM_IRQ) != 0 {
+                        irq_mask |= INT_LCDSTAT;
                     }
                 } else {
                     self.mode = Mode::VBlank;
-                    vblank_irq = true;
+                    irq_mask |= INT_VBLANK;
 
-                    if (self.stat & 0b0001_0000) != 0 {
-                        stat_irq = true;
+                    if (self.stat & STAT_VBLANK_IRQ) != 0 {
+                        irq_mask |= INT_LCDSTAT;
                     }
                 }
             }
@@ -140,15 +137,15 @@ impl Ppu {
                 self.scanline += 1;
 
                 if self.compare_lyc() {
-                    stat_irq = true;
+                    irq_mask |= INT_LCDSTAT;
                 }
 
                 if self.scanline > 153 {
                     self.scanline = 0;
                     self.mode = Mode::OAMSearch;
 
-                    if (self.stat & 0b0010_0000) != 0 {
-                        stat_irq = true;
+                    if (self.stat & STAT_OAM_IRQ) != 0 {
+                        irq_mask |= INT_LCDSTAT;
                     }
                 }
             }
@@ -156,16 +153,16 @@ impl Ppu {
 
         self.stat = (self.stat & 0xFC) | (self.mode as u8);
 
-        (vblank_irq, stat_irq)
+        irq_mask
     }
 
     #[inline(always)]
     fn compare_lyc(&mut self) -> bool {
         if self.scanline == self.lyc {
-            self.stat |= 0b0000_0100;
-            (self.stat & 0b1000_0000) != 0
+            self.stat |= STAT_LYC_EQ_LY;
+            (self.stat & STAT_LYC_IRQ) != 0
         } else {
-            self.stat &= !0b0000_0100;
+            self.stat &= !STAT_LYC_EQ_LY;
             false
         }
     }
