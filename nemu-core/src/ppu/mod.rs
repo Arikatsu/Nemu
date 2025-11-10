@@ -1,19 +1,13 @@
 mod utils;
 
-use utils::{
-    Mode,
-    STAT_HBLANK_IRQ,
-    STAT_VBLANK_IRQ,
-    STAT_OAM_IRQ,
-    STAT_LYC_IRQ,
-    STAT_LYC_EQ_LY
-};
 use crate::interrupts::{INT_LCDSTAT, INT_VBLANK};
+use utils::{Mode, STAT_HBLANK_IRQ, STAT_LYC_EQ_LY, STAT_LYC_IRQ, STAT_OAM_IRQ, STAT_VBLANK_IRQ};
 
 pub struct Ppu {
-    scanline: u8,
-    lyc: u8,
+    lcdc: u8,
     stat: u8,
+    ly: u8,
+    lyc: u8,
     dots: u16,
     mode: Mode,
     vram: [u8; 0x2000],
@@ -23,9 +17,10 @@ pub struct Ppu {
 impl Ppu {
     pub(crate) fn new() -> Self {
         Self {
-            lyc: 0,
+            lcdc: 0,
             stat: 0,
-            scanline: 0,
+            ly: 0,
+            lyc: 0,
             dots: 0,
             mode: Mode::OAMSearch,
             vram: [0; 0x2000],
@@ -34,9 +29,10 @@ impl Ppu {
     }
 
     pub(crate) fn reset(&mut self) {
-        self.lyc = 0;
+        self.lcdc = 0;
         self.stat = 0;
-        self.scanline = 0;
+        self.ly = 0;
+        self.lyc = 0;
         self.dots = 0;
         self.mode = Mode::OAMSearch;
         self.vram = [0; 0x2000];
@@ -44,6 +40,11 @@ impl Ppu {
     }
 
     pub(crate) fn update(&mut self, cycles: u8) -> u8 {
+        if (self.lcdc & 0x80) == 0 {
+            // LCD is off
+            return 0;
+        }
+
         let mut irq_mask: u8 = 0;
         self.dots += (cycles * 4) as u16;
 
@@ -52,7 +53,7 @@ impl Ppu {
                 Mode::OAMSearch => 80,
                 Mode::PixelTransfer => 80 + 172,
                 Mode::HBlank => 456,
-                Mode::VBlank => 456,        // each line in vblank is 456 dots
+                Mode::VBlank => 456, // each line in vblank is 456 dots
             };
 
             if self.dots < threshold {
@@ -60,7 +61,7 @@ impl Ppu {
             }
 
             irq_mask |= self.switch_modes();
-            if self.dots >= 456 {
+            while self.dots >= 456 {
                 self.dots -= 456;
             }
         }
@@ -73,10 +74,11 @@ impl Ppu {
         match addr {
             0x8000..=0x9FFF => self.vram[(addr - 0x8000) as usize],
             0xFE00..=0xFE9F => self.oam[(addr - 0xFE00) as usize],
+            0xFF40 => self.lcdc,
             0xFF41 => self.stat,
-            0xFF44 => self.scanline, // LY register
+            0xFF44 => self.ly,
             0xFF45 => self.lyc,
-            _ => 0,
+            _ => panic!("PPU read from invalid address: {:#06X}", addr),
         }
     }
 
@@ -85,11 +87,10 @@ impl Ppu {
         match addr {
             0x8000..=0x9FFF => self.vram[(addr - 0x8000) as usize] = value,
             0xFE00..=0xFE9F => self.oam[(addr - 0xFE00) as usize] = value,
-            0xFF41 => {
-                self.stat = (value & 0xF8) | (self.stat & 0x07);
-            }
+            0xFF40 => self.set_lcdc(value),
+            0xFF41 => self.stat = (value & 0xF8) | (self.stat & 0x07),
             0xFF45 => self.lyc = value,
-            _ => {}
+            _ => panic!("PPU write to invalid address: {:#06X}", addr),
         }
     }
 
@@ -109,13 +110,13 @@ impl Ppu {
                 }
             }
             Mode::HBlank => {
-                self.scanline += 1;
+                self.ly += 1;
 
                 if self.compare_lyc() {
                     irq_mask |= INT_LCDSTAT;
                 }
 
-                if self.scanline < 144 {
+                if self.ly < 144 {
                     self.mode = Mode::OAMSearch;
 
                     if (self.stat & STAT_OAM_IRQ) != 0 {
@@ -131,14 +132,14 @@ impl Ppu {
                 }
             }
             Mode::VBlank => {
-                self.scanline += 1;
+                self.ly += 1;
 
                 if self.compare_lyc() {
                     irq_mask |= INT_LCDSTAT;
                 }
 
-                if self.scanline > 153 {
-                    self.scanline = 0;
+                if self.ly > 153 {
+                    self.ly = 0;
                     self.mode = Mode::OAMSearch;
 
                     if (self.stat & STAT_OAM_IRQ) != 0 {
@@ -154,8 +155,36 @@ impl Ppu {
     }
 
     #[inline(always)]
+    fn set_lcdc(&mut self, value: u8) {
+        let new_lcd_enabled = (value & 0x80) != 0;
+        let old_lcd_enabled = (self.lcdc & 0x80) != 0;
+
+        if !new_lcd_enabled && old_lcd_enabled {
+            #[cfg(debug_assertions)]
+            if self.mode != Mode::VBlank {
+                eprintln!("LCD turned off outside of VBlank (mode {})", self.mode as u8);
+            }
+
+            self.ly = 0;
+            self.dots = 0;
+            self.mode = Mode::HBlank;
+            self.stat = (self.stat & 0xFC) | (Mode::HBlank as u8);
+        }
+
+        if new_lcd_enabled && !old_lcd_enabled {
+            self.ly = 0;
+            self.dots = 0;
+            self.mode = Mode::OAMSearch;
+            self.stat = (self.stat & 0xFC) | (Mode::OAMSearch as u8);
+            self.compare_lyc();
+        }
+
+        self.lcdc = value;
+    }
+
+    #[inline(always)]
     fn compare_lyc(&mut self) -> bool {
-        if self.scanline == self.lyc {
+        if self.ly == self.lyc {
             self.stat |= STAT_LYC_EQ_LY;
             (self.stat & STAT_LYC_IRQ) != 0
         } else {

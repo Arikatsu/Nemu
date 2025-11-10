@@ -1,4 +1,4 @@
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub(super) enum Mode {
     HBlank = 0x00,
     VBlank = 0x01,
