@@ -1,11 +1,11 @@
-mod registers;
 mod instructions;
+mod registers;
 mod utils;
 
-use instructions::*;
-use utils::*;
-use registers::{Reg8, Reg16, Registers};
 use crate::bus::Bus;
+use instructions::*;
+use registers::{Reg8, Reg16, Registers};
+use utils::*;
 
 pub struct Cpu {
     pub(crate) regs: Registers,
@@ -92,7 +92,7 @@ impl Cpu {
 
     fn execute(&mut self, opcode: u8, bus: &mut Bus) {
         match opcode {
-            0x00 => {}, // NOP
+            0x00 => {} // NOP
             0x01 => ld_r16_imm16(self, bus, Reg16::BC),
             0x02 => ld_mem_r16_r8(self, bus, Reg16::BC, Reg8::A),
             0x03 => inc_r16(self, bus, Reg16::BC),
@@ -156,7 +156,7 @@ impl Cpu {
             0x3D => dec_r8(self, Reg8::A),
             0x3E => ld_r8_imm8(self, bus, Reg8::A),
             0x3F => ccf(self),
-            0x40 => {}, // LD B, B (lmao....)
+            0x40 => {} // LD B, B (lmao....)
             0x41 => ld_r8_r8(self, Reg8::B, Reg8::C),
             0x42 => ld_r8_r8(self, Reg8::B, Reg8::D),
             0x43 => ld_r8_r8(self, Reg8::B, Reg8::E),
@@ -165,7 +165,7 @@ impl Cpu {
             0x46 => ld_r8_mem_r16(self, bus, Reg8::B, Reg16::HL),
             0x47 => ld_r8_r8(self, Reg8::B, Reg8::A),
             0x48 => ld_r8_r8(self, Reg8::C, Reg8::B),
-            0x49 => {}, // LD C, C
+            0x49 => {} // LD C, C
             0x4A => ld_r8_r8(self, Reg8::C, Reg8::D),
             0x4B => ld_r8_r8(self, Reg8::C, Reg8::E),
             0x4C => ld_r8_r8(self, Reg8::C, Reg8::H),
@@ -174,7 +174,7 @@ impl Cpu {
             0x4F => ld_r8_r8(self, Reg8::C, Reg8::A),
             0x50 => ld_r8_r8(self, Reg8::D, Reg8::B),
             0x51 => ld_r8_r8(self, Reg8::D, Reg8::C),
-            0x52 => {}, // LD D, D
+            0x52 => {} // LD D, D
             0x53 => ld_r8_r8(self, Reg8::D, Reg8::E),
             0x54 => ld_r8_r8(self, Reg8::D, Reg8::H),
             0x55 => ld_r8_r8(self, Reg8::D, Reg8::L),
@@ -183,7 +183,7 @@ impl Cpu {
             0x58 => ld_r8_r8(self, Reg8::E, Reg8::B),
             0x59 => ld_r8_r8(self, Reg8::E, Reg8::C),
             0x5A => ld_r8_r8(self, Reg8::E, Reg8::D),
-            0x5B => {}, // LD E, E
+            0x5B => {} // LD E, E
             0x5C => ld_r8_r8(self, Reg8::E, Reg8::H),
             0x5D => ld_r8_r8(self, Reg8::E, Reg8::L),
             0x5E => ld_r8_mem_r16(self, bus, Reg8::E, Reg16::HL),
@@ -192,7 +192,7 @@ impl Cpu {
             0x61 => ld_r8_r8(self, Reg8::H, Reg8::C),
             0x62 => ld_r8_r8(self, Reg8::H, Reg8::D),
             0x63 => ld_r8_r8(self, Reg8::H, Reg8::E),
-            0x64 => {}, // LD H, H
+            0x64 => {} // LD H, H
             0x65 => ld_r8_r8(self, Reg8::H, Reg8::L),
             0x66 => ld_r8_mem_r16(self, bus, Reg8::H, Reg16::HL),
             0x67 => ld_r8_r8(self, Reg8::H, Reg8::A),
@@ -201,7 +201,7 @@ impl Cpu {
             0x6A => ld_r8_r8(self, Reg8::L, Reg8::D),
             0x6B => ld_r8_r8(self, Reg8::L, Reg8::E),
             0x6C => ld_r8_r8(self, Reg8::L, Reg8::H),
-            0x6D => {}, // LD L, L
+            0x6D => {} // LD L, L
             0x6E => ld_r8_mem_r16(self, bus, Reg8::L, Reg16::HL),
             0x6F => ld_r8_r8(self, Reg8::L, Reg8::A),
             0x70 => ld_mem_r16_r8(self, bus, Reg16::HL, Reg8::B),
@@ -219,7 +219,7 @@ impl Cpu {
             0x7C => ld_r8_r8(self, Reg8::A, Reg8::H),
             0x7D => ld_r8_r8(self, Reg8::A, Reg8::L),
             0x7E => ld_r8_mem_r16(self, bus, Reg8::A, Reg16::HL),
-            0x7F => {}, // LD A, A
+            0x7F => {} // LD A, A
             0x80 => add_r8(self, Reg8::B),
             0x81 => add_r8(self, Reg8::C),
             0x82 => add_r8(self, Reg8::D),
@@ -350,61 +350,45 @@ impl Cpu {
             0xFF => rst(self, bus, 0x38),
 
             _ => {
-                unimplemented!("Unimplemented opcode: {:02X}", opcode);
+                panic!("Unknown opcode: 0x{:02X} at PC: 0x{:04X}", opcode, self.regs.pc() - 1);
             }
         }
     }
 
     fn execute_cb(&mut self, opcode: u8, bus: &mut Bus) {
         match opcode {
-            0x00..=0x07 => {
-                match reg_cb!(opcode) {
-                    Some(r) => rlc_r8(self, r),
-                    None => rlc_mem_hl(self, bus),
-                }
-            }
-            0x08..=0x0F => {
-                match reg_cb!(opcode) {
-                    Some(r) => rrc_r8(self, r),
-                    None => rrc_mem_hl(self, bus),
-                }
-            }
-            0x10..=0x17 => {
-                match reg_cb!(opcode) {
-                    Some(r) => rl_r8(self, r),
-                    None => rl_mem_hl(self, bus),
-                }
-            }
-            0x18..=0x1F => {
-                match reg_cb!(opcode) {
-                    Some(r) => rr_r8(self, r),
-                    None => rr_mem_hl(self, bus),
-                }
-            }
-            0x20..=0x27 => {
-                match reg_cb!(opcode) {
-                    Some(r) => sla_r8(self, r),
-                    None => sla_mem_hl(self, bus),
-                }
-            }
-            0x28..=0x2F => {
-                match reg_cb!(opcode) {
-                    Some(r) => sra_r8(self, r),
-                    None => sra_mem_hl(self, bus),
-                }
-            }
-            0x30..=0x37 => {
-                match reg_cb!(opcode) {
-                    Some(r) => swap_r8(self, r),
-                    None => swap_mem_hl(self, bus),
-                }
-            }
-            0x38..=0x3F => {
-                match reg_cb!(opcode) {
-                    Some(r) => srl_r8(self, r),
-                    None => srl_mem_hl(self, bus),
-                }
-            }
+            0x00..=0x07 => match reg_cb!(opcode) {
+                Some(r) => rlc_r8(self, r),
+                None => rlc_mem_hl(self, bus),
+            },
+            0x08..=0x0F => match reg_cb!(opcode) {
+                Some(r) => rrc_r8(self, r),
+                None => rrc_mem_hl(self, bus),
+            },
+            0x10..=0x17 => match reg_cb!(opcode) {
+                Some(r) => rl_r8(self, r),
+                None => rl_mem_hl(self, bus),
+            },
+            0x18..=0x1F => match reg_cb!(opcode) {
+                Some(r) => rr_r8(self, r),
+                None => rr_mem_hl(self, bus),
+            },
+            0x20..=0x27 => match reg_cb!(opcode) {
+                Some(r) => sla_r8(self, r),
+                None => sla_mem_hl(self, bus),
+            },
+            0x28..=0x2F => match reg_cb!(opcode) {
+                Some(r) => sra_r8(self, r),
+                None => sra_mem_hl(self, bus),
+            },
+            0x30..=0x37 => match reg_cb!(opcode) {
+                Some(r) => swap_r8(self, r),
+                None => swap_mem_hl(self, bus),
+            },
+            0x38..=0x3F => match reg_cb!(opcode) {
+                Some(r) => srl_r8(self, r),
+                None => srl_mem_hl(self, bus),
+            },
             0x40..=0x7F => {
                 let bit = (opcode - 0x40) / 8;
                 match reg_cb!(opcode) {

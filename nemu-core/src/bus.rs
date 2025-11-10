@@ -1,5 +1,5 @@
-use crate::timer::Timer;
 use crate::ppu::Ppu;
+use crate::timer::Timer;
 
 pub(crate) struct Bus {
     cartridge: [u8; 0x8000], // 32KB Cartridge ROM
@@ -26,7 +26,7 @@ impl Bus {
             ie: 0,
             timer: Timer::new(),
             ppu: Ppu::new(),
-            
+
             #[cfg(test)]
             serial_output: String::new(),
         }
@@ -87,7 +87,7 @@ impl Bus {
             0xFFFF => self.ie,
         }
     }
-    
+
     #[inline(always)]
     pub(crate) fn write(&mut self, addr: u16, data: u8) {
         self.tick(1);
