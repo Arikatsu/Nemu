@@ -9,7 +9,7 @@ pub(crate) struct Bus {
     hram: [u8; 0x7F],        // High RAM
     ie: u8,                  // Interrupt Enable Register
     timer: Timer,
-    ppu: Ppu,
+    pub(crate) ppu: Ppu,
 
     #[cfg(test)]
     pub(crate) serial_output: String,
@@ -44,9 +44,7 @@ impl Bus {
         self.ppu.reset();
 
         #[cfg(test)]
-        {
-            self.serial_output.clear();
-        }
+        self.serial_output.clear();
     }
 
     pub(crate) fn load_cartridge_bytes(&mut self, data: &[u8]) {
@@ -79,8 +77,7 @@ impl Bus {
             0xFE00..=0xFE9F => self.ppu.read(addr),
             0xFEA0..=0xFEFF => 0, // unusable
             0xFF04..=0xFF07 => self.timer.read(addr),
-            0xFF40..=0xFF41 => self.ppu.read(addr),
-            0xFF44..=0xFF45 => self.ppu.read(addr),
+            0xFF40..=0xFF45 => self.ppu.read(addr),
             0xFF00..=0xFF7F => self.io[(addr - 0xFF00) as usize],
             0xFF80..=0xFFFE => self.hram[(addr - 0xFF80) as usize],
             0xFFFF => self.ie,
@@ -110,8 +107,7 @@ impl Bus {
                 }
             }
             0xFF04..=0xFF07 => self.timer.write(addr, data),
-            0xFF40..=0xFF41 => self.ppu.write(addr, data),
-            0xFF44..=0xFF45 => self.ppu.write(addr, data),
+            0xFF40..=0xFF45 => self.ppu.write(addr, data),
             0xFF00..=0xFF7F => self.io[(addr - 0xFF00) as usize] = data,
             0xFF80..=0xFFFE => self.hram[(addr - 0xFF80) as usize] = data,
             0xFFFF => self.ie = data,

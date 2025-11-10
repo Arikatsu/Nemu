@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 pub(crate) const INT_VBLANK: u8 = 0b0000_0001;
 pub(crate) const INT_LCDSTAT: u8 = 0b0000_0010;
 pub(crate) const INT_TIMER: u8 = 0b0000_0100;

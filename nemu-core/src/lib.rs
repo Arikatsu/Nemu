@@ -44,6 +44,9 @@ impl Nemu {
     pub fn get_regs_snapshot(&self) -> String {
         self.cpu.regs.get_snapshot()
     }
+    pub fn get_framebuffer(&self) -> &[[u8; 160]; 144] {
+        &self.bus.ppu.framebuffer
+    }
 }
 
 #[cfg(test)]
