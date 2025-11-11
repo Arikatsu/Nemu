@@ -74,7 +74,7 @@ mod tests {
     }
 
     #[test]
-    fn test_cpu_instrs_01() {
+    fn cpu_instrs_01() {
         let result = run_test_rom(
             "../tests/cpu_instrs/individual/01-special.gb",
         );
@@ -82,7 +82,7 @@ mod tests {
     }
 
     #[test]
-    fn test_cpu_instrs_02() {
+    fn cpu_instrs_02() {
         let result = run_test_rom(
             "../tests/cpu_instrs/individual/02-interrupts.gb",
         );
@@ -90,7 +90,7 @@ mod tests {
     }
 
     #[test]
-    fn test_cpu_instrs_03() {
+    fn cpu_instrs_03() {
         let result = run_test_rom(
             "../tests/cpu_instrs/individual/03-op sp,hl.gb",
         );
@@ -98,7 +98,7 @@ mod tests {
     }
 
     #[test]
-    fn test_cpu_instrs_04() {
+    fn cpu_instrs_04() {
         let result = run_test_rom(
             "../tests/cpu_instrs/individual/04-op r,imm.gb",
         );
@@ -106,7 +106,7 @@ mod tests {
     }
 
     #[test]
-    fn test_cpu_instrs_05() {
+    fn cpu_instrs_05() {
         let result = run_test_rom(
             "../tests/cpu_instrs/individual/05-op rp.gb",
         );
@@ -114,7 +114,7 @@ mod tests {
     }
 
     #[test]
-    fn test_cpu_instrs_06() {
+    fn cpu_instrs_06() {
         let result = run_test_rom(
             "../tests/cpu_instrs/individual/06-ld r,r.gb",
         );
@@ -122,7 +122,7 @@ mod tests {
     }
 
     #[test]
-    fn test_cpu_instrs_07() {
+    fn cpu_instrs_07() {
         let result = run_test_rom(
             "../tests/cpu_instrs/individual/07-jr,jp,call,ret,rst.gb",
         );
@@ -130,7 +130,7 @@ mod tests {
     }
 
     #[test]
-    fn test_cpu_instrs_08() {
+    fn cpu_instrs_08() {
         let result = run_test_rom(
             "../tests/cpu_instrs/individual/08-misc instrs.gb",
         );
@@ -138,7 +138,7 @@ mod tests {
     }
 
     #[test]
-    fn test_cpu_instrs_09() {
+    fn cpu_instrs_09() {
         let result = run_test_rom(
             "../tests/cpu_instrs/individual/09-op r,r.gb",
         );
@@ -146,7 +146,7 @@ mod tests {
     }
 
     #[test]
-    fn test_cpu_instrs_10() {
+    fn cpu_instrs_10() {
         let result = run_test_rom(
             "../tests/cpu_instrs/individual/10-bit ops.gb",
         );
@@ -154,7 +154,7 @@ mod tests {
     }
 
     #[test]
-    fn test_cpu_instrs_11() {
+    fn cpu_instrs_11() {
         let result = run_test_rom(
             "../tests/cpu_instrs/individual/11-op a,(hl).gb",
         );
@@ -162,9 +162,33 @@ mod tests {
     }
 
     #[test]
-    fn test_instr_timing() {
+    fn instr_timing() {
         let result = run_test_rom(
             "../tests/instr_timing/instr_timing.gb",
+        );
+        assert!(result);
+    }
+
+    #[test]
+    fn mem_timing_01() {
+        let result = run_test_rom(
+            "../tests/mem_timing/individual/01-read_timing.gb",
+        );
+        assert!(result);
+    }
+
+    #[test]
+    fn mem_timing_02() {
+        let result = run_test_rom(
+            "../tests/mem_timing/individual/02-write_timing.gb",
+        );
+        assert!(result);
+    }
+
+    #[test]
+    fn mem_timing_03() {
+        let result = run_test_rom(
+            "../tests/mem_timing/individual/03-modify_timing.gb",
         );
         assert!(result);
     }
