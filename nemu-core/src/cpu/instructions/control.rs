@@ -102,8 +102,9 @@ pub(in crate::cpu) fn ret(cpu: &mut Cpu, bus: &mut Bus) {
 
 /// RET cc - Conditional return from subroutine
 pub(in crate::cpu) fn ret_cond(cpu: &mut Cpu, bus: &mut Bus, cond: JumpCond) {
+    bus.tick(1);
+
     if cond.check(&cpu.regs) {
-        bus.tick(1);
         let ret_addr = bus.read_u16(cpu.regs.sp());
         cpu.regs.inc_sp(2);
         bus.tick(1);

@@ -31,7 +31,7 @@ impl Timer {
         let mut irq_mask = 0;
 
         if self.overflow_cycles > 0 {
-            self.overflow_cycles = self.overflow_cycles.saturating_sub(cycles * 4);
+            self.overflow_cycles = self.overflow_cycles.saturating_sub(cycles);
             if self.overflow_cycles == 0 {
                 self.tima = self.tma;
                 irq_mask = INT_TIMER;
@@ -43,14 +43,11 @@ impl Timer {
 
         if (self.tac & 0x04) != 0 {
             let div_bit = self.get_bit_position();
+            let old_bit = (old_div >> div_bit) & 1;
+            let new_bit = (self.div >> div_bit) & 1;
 
-            for div in (old_div + 1)..=self.div {
-                let old_bit = (old_div >> div_bit) & 1;
-                let new_bit = (div >> div_bit) & 1;
-
-                if old_bit == 1 && new_bit == 0 {
-                    self.increment_tima();
-                }
+            if old_bit == 1 && new_bit == 0 {
+                self.increment_tima();
             }
         }
 
@@ -60,7 +57,7 @@ impl Timer {
     fn increment_tima(&mut self) {
         if self.tima == 0xFF {
             self.tima = 0;
-            self.overflow_cycles = 4;
+            self.overflow_cycles = 1;
         } else {
             self.tima = self.tima.wrapping_add(1);
         }

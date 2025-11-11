@@ -64,7 +64,7 @@ mod tests {
                 if output.contains("Passed") {
                     return true;
                 } else if output.contains("Failed") {
-                    println!("\x1b[32mSerial Output:\x1b[0m\n{}", output);
+                    eprintln!("\x1b[32mSerial Output:\x1b[0m\n{}", output);
                     return false;
                 }
             }
@@ -157,6 +157,14 @@ mod tests {
     fn test_cpu_instrs_11() {
         let result = run_test_rom(
             "../tests/cpu_instrs/individual/11-op a,(hl).gb",
+        );
+        assert!(result);
+    }
+
+    #[test]
+    fn test_instr_timing() {
+        let result = run_test_rom(
+            "../tests/instr_timing/instr_timing.gb",
         );
         assert!(result);
     }
