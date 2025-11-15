@@ -21,16 +21,17 @@ impl JumpCond {
 }
 
 /// JR imm8 - Jump relative by immediate 8-bit signed offset
-pub(in crate::cpu) fn jr_imm8(cpu: &mut Cpu, bus: &mut Bus) {
+pub(in crate::cpu) fn jr_imm8(cpu: &mut Cpu, bus: &mut Bus) -> u8 {
     let offset = bus.read(cpu.regs.pc()) as i8;
     cpu.regs.inc_pc(1);
     let pc = cpu.regs.pc().wrapping_add(offset as u16);
     cpu.regs.set_pc(pc);
     bus.tick(1);
+    12
 }
 
 /// JR cc, imm8 - Conditional jump relative by immediate 8-bit signed offset
-pub(in crate::cpu) fn jr_cond_imm8(cpu: &mut Cpu, bus: &mut Bus, cond: JumpCond) {
+pub(in crate::cpu) fn jr_cond_imm8(cpu: &mut Cpu, bus: &mut Bus, cond: JumpCond) -> u8 {
     let offset = bus.read(cpu.regs.pc()) as i8;
     cpu.regs.inc_pc(1);
 
@@ -38,35 +39,41 @@ pub(in crate::cpu) fn jr_cond_imm8(cpu: &mut Cpu, bus: &mut Bus, cond: JumpCond)
         let pc = cpu.regs.pc().wrapping_add(offset as u16);
         cpu.regs.set_pc(pc);
         bus.tick(1);
+        return 12;
     }
+    8
 }
 
 /// JP imm16 - Jump to immediate 16-bit address
-pub(in crate::cpu) fn jp_imm16(cpu: &mut Cpu, bus: &mut Bus) {
+pub(in crate::cpu) fn jp_imm16(cpu: &mut Cpu, bus: &mut Bus) -> u8 {
     let addr = bus.read_u16(cpu.regs.pc());
     cpu.regs.set_pc(addr);
     bus.tick(1);
+    16
 }
 
 /// JP HL - Jump to address in HL
-pub(in crate::cpu) fn jp_hl(cpu: &mut Cpu) {
+pub(in crate::cpu) fn jp_hl(cpu: &mut Cpu) -> u8 {
     let addr = cpu.regs.hl();
     cpu.regs.set_pc(addr);
+    4
 }
 
 /// JP cc, imm16 - Conditional jump to immediate 16-bit address
-pub(in crate::cpu) fn jp_cond_imm16(cpu: &mut Cpu, bus: &mut Bus, cond: JumpCond) {
+pub(in crate::cpu) fn jp_cond_imm16(cpu: &mut Cpu, bus: &mut Bus, cond: JumpCond) -> u8 {
     let addr = bus.read_u16(cpu.regs.pc());
     cpu.regs.inc_pc(2);
 
     if cond.check(&cpu.regs) {
         cpu.regs.set_pc(addr);
         bus.tick(1);
+        return 16;
     }
+    12
 }
 
 /// CALL imm16 - Call subroutine at immediate 16-bit address
-pub(in crate::cpu) fn call_imm16(cpu: &mut Cpu, bus: &mut Bus) {
+pub(in crate::cpu) fn call_imm16(cpu: &mut Cpu, bus: &mut Bus) -> u8 {
     let addr = bus.read_u16(cpu.regs.pc());
     cpu.regs.inc_pc(2);
     let ret_addr = cpu.regs.pc();
@@ -75,10 +82,11 @@ pub(in crate::cpu) fn call_imm16(cpu: &mut Cpu, bus: &mut Bus) {
     bus.write_u16(sp, ret_addr);
     cpu.regs.set_sp(sp);
     cpu.regs.set_pc(addr);
+    24
 }
 
 /// CALL cc, imm16 - Conditional call to subroutine at immediate 16-bit address
-pub(in crate::cpu) fn call_cond_imm16(cpu: &mut Cpu, bus: &mut Bus, cond: JumpCond) {
+pub(in crate::cpu) fn call_cond_imm16(cpu: &mut Cpu, bus: &mut Bus, cond: JumpCond) -> u8 {
     let addr = bus.read_u16(cpu.regs.pc());
     cpu.regs.inc_pc(2);
 
@@ -89,19 +97,22 @@ pub(in crate::cpu) fn call_cond_imm16(cpu: &mut Cpu, bus: &mut Bus, cond: JumpCo
         bus.write_u16(sp, ret_addr);
         cpu.regs.set_sp(sp);
         cpu.regs.set_pc(addr);
+        return 24;
     }
+    12
 }
 
 /// RET - Return from subroutine
-pub(in crate::cpu) fn ret(cpu: &mut Cpu, bus: &mut Bus) {
+pub(in crate::cpu) fn ret(cpu: &mut Cpu, bus: &mut Bus) -> u8 {
     let ret_addr = bus.read_u16(cpu.regs.sp());
     cpu.regs.inc_sp(2);
     cpu.regs.set_pc(ret_addr);
     bus.tick(1);
+    16
 }
 
 /// RET cc - Conditional return from subroutine
-pub(in crate::cpu) fn ret_cond(cpu: &mut Cpu, bus: &mut Bus, cond: JumpCond) {
+pub(in crate::cpu) fn ret_cond(cpu: &mut Cpu, bus: &mut Bus, cond: JumpCond) -> u8 {
     bus.tick(1);
 
     if cond.check(&cpu.regs) {
@@ -109,21 +120,25 @@ pub(in crate::cpu) fn ret_cond(cpu: &mut Cpu, bus: &mut Bus, cond: JumpCond) {
         cpu.regs.inc_sp(2);
         bus.tick(1);
         cpu.regs.set_pc(ret_addr);
+        return 20;
     }
+    8
 }
 
 /// RETI - Return from interrupt (enable interrupts after return)
-pub(in crate::cpu) fn reti(cpu: &mut Cpu, bus: &mut Bus) {
+pub(in crate::cpu) fn reti(cpu: &mut Cpu, bus: &mut Bus) -> u8 {
     ret(cpu, bus);
     cpu.ime = InterruptMode::Enabled;
+    16
 }
 
 /// RST vec - Call subroutine at fixed address (vector)
-pub(in crate::cpu) fn rst(cpu: &mut Cpu, bus: &mut Bus, vec: u8) {
+pub(in crate::cpu) fn rst(cpu: &mut Cpu, bus: &mut Bus, vec: u8) -> u8 {
     let ret_addr = cpu.regs.pc();
     let sp = cpu.regs.sp().wrapping_sub(2);
     bus.tick(1);
     bus.write_u16(sp, ret_addr);
     cpu.regs.set_sp(sp);
     cpu.regs.set_pc(vec as u16);
+    16
 }

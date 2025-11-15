@@ -36,8 +36,8 @@ impl Nemu {
         self.bus.reset();
     }
 
-    pub fn step(&mut self) {
-        self.cpu.step(&mut self.bus);
+    pub fn step(&mut self) -> u8 {
+        self.cpu.step(&mut self.bus)
     }
 
     pub fn load_cartridge<P: AsRef<std::path::Path>>(&mut self, path: P) -> std::io::Result<()> {

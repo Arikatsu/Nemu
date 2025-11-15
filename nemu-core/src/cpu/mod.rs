@@ -28,7 +28,7 @@ impl Cpu {
         self.halted = false;
     }
 
-    pub fn step(&mut self, bus: &mut Bus) {
+    pub fn step(&mut self, bus: &mut Bus) -> u8 {
         let (ie, _if) = bus.get_ie_if();
         let int_pending = (ie & _if) & 0x1F;
 
@@ -39,7 +39,7 @@ impl Cpu {
                 self.halted = false;
             }
 
-            return;
+            return 4;
         }
 
         if let InterruptMode::Enabled = self.ime {
@@ -61,10 +61,10 @@ impl Cpu {
             return self.execute_cb(cb_opcode, bus);
         }
 
-        self.execute(opcode, bus);
+        self.execute(opcode, bus)
     }
 
-    fn service_interrupt(&mut self, int_pending: u8, _if: u8, bus: &mut Bus) {
+    fn service_interrupt(&mut self, int_pending: u8, _if: u8, bus: &mut Bus) -> u8 {
         for (bit, addr) in [
             (0, 0x40), // V-Blank
             (1, 0x48), // LCD STAT
@@ -88,11 +88,12 @@ impl Cpu {
                 break;
             }
         }
+        20
     }
 
-    fn execute(&mut self, opcode: u8, bus: &mut Bus) {
+    fn execute(&mut self, opcode: u8, bus: &mut Bus) -> u8 {
         match opcode {
-            0x00 => {} // NOP
+            0x00 => 4, // NOP
             0x01 => ld_r16_imm16(self, bus, Reg16::BC),
             0x02 => ld_mem_r16_r8(self, bus, Reg16::BC, Reg8::A),
             0x03 => inc_r16(self, bus, Reg16::BC),
@@ -156,7 +157,7 @@ impl Cpu {
             0x3D => dec_r8(self, Reg8::A),
             0x3E => ld_r8_imm8(self, bus, Reg8::A),
             0x3F => ccf(self),
-            0x40 => {} // LD B, B (lmao....)
+            0x40 => 4, // LD B, B (lmao....)
             0x41 => ld_r8_r8(self, Reg8::B, Reg8::C),
             0x42 => ld_r8_r8(self, Reg8::B, Reg8::D),
             0x43 => ld_r8_r8(self, Reg8::B, Reg8::E),
@@ -165,7 +166,7 @@ impl Cpu {
             0x46 => ld_r8_mem_r16(self, bus, Reg8::B, Reg16::HL),
             0x47 => ld_r8_r8(self, Reg8::B, Reg8::A),
             0x48 => ld_r8_r8(self, Reg8::C, Reg8::B),
-            0x49 => {} // LD C, C
+            0x49 => 4, // LD C, C
             0x4A => ld_r8_r8(self, Reg8::C, Reg8::D),
             0x4B => ld_r8_r8(self, Reg8::C, Reg8::E),
             0x4C => ld_r8_r8(self, Reg8::C, Reg8::H),
@@ -174,7 +175,7 @@ impl Cpu {
             0x4F => ld_r8_r8(self, Reg8::C, Reg8::A),
             0x50 => ld_r8_r8(self, Reg8::D, Reg8::B),
             0x51 => ld_r8_r8(self, Reg8::D, Reg8::C),
-            0x52 => {} // LD D, D
+            0x52 => 4, // LD D, D
             0x53 => ld_r8_r8(self, Reg8::D, Reg8::E),
             0x54 => ld_r8_r8(self, Reg8::D, Reg8::H),
             0x55 => ld_r8_r8(self, Reg8::D, Reg8::L),
@@ -183,7 +184,7 @@ impl Cpu {
             0x58 => ld_r8_r8(self, Reg8::E, Reg8::B),
             0x59 => ld_r8_r8(self, Reg8::E, Reg8::C),
             0x5A => ld_r8_r8(self, Reg8::E, Reg8::D),
-            0x5B => {} // LD E, E
+            0x5B => 4, // LD E, E
             0x5C => ld_r8_r8(self, Reg8::E, Reg8::H),
             0x5D => ld_r8_r8(self, Reg8::E, Reg8::L),
             0x5E => ld_r8_mem_r16(self, bus, Reg8::E, Reg16::HL),
@@ -192,7 +193,7 @@ impl Cpu {
             0x61 => ld_r8_r8(self, Reg8::H, Reg8::C),
             0x62 => ld_r8_r8(self, Reg8::H, Reg8::D),
             0x63 => ld_r8_r8(self, Reg8::H, Reg8::E),
-            0x64 => {} // LD H, H
+            0x64 => 4, // LD H, H
             0x65 => ld_r8_r8(self, Reg8::H, Reg8::L),
             0x66 => ld_r8_mem_r16(self, bus, Reg8::H, Reg16::HL),
             0x67 => ld_r8_r8(self, Reg8::H, Reg8::A),
@@ -201,7 +202,7 @@ impl Cpu {
             0x6A => ld_r8_r8(self, Reg8::L, Reg8::D),
             0x6B => ld_r8_r8(self, Reg8::L, Reg8::E),
             0x6C => ld_r8_r8(self, Reg8::L, Reg8::H),
-            0x6D => {} // LD L, L
+            0x6D => 4, // LD L, L
             0x6E => ld_r8_mem_r16(self, bus, Reg8::L, Reg16::HL),
             0x6F => ld_r8_r8(self, Reg8::L, Reg8::A),
             0x70 => ld_mem_r16_r8(self, bus, Reg16::HL, Reg8::B),
@@ -219,7 +220,7 @@ impl Cpu {
             0x7C => ld_r8_r8(self, Reg8::A, Reg8::H),
             0x7D => ld_r8_r8(self, Reg8::A, Reg8::L),
             0x7E => ld_r8_mem_r16(self, bus, Reg8::A, Reg16::HL),
-            0x7F => {} // LD A, A
+            0x7F => 4, // LD A, A
             0x80 => add_r8(self, Reg8::B),
             0x81 => add_r8(self, Reg8::C),
             0x82 => add_r8(self, Reg8::D),
@@ -355,7 +356,7 @@ impl Cpu {
         }
     }
 
-    fn execute_cb(&mut self, opcode: u8, bus: &mut Bus) {
+    fn execute_cb(&mut self, opcode: u8, bus: &mut Bus) -> u8 {
         match opcode {
             0x00..=0x07 => match reg_cb!(opcode) {
                 Some(r) => rlc_r8(self, r),
