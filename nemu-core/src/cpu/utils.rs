@@ -1,4 +1,4 @@
-pub(in super) enum InterruptMode {
+pub(crate) enum InterruptMode {
     Enabled,
     Disabled,
     Pending,

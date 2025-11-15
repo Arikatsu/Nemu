@@ -1,14 +1,14 @@
 pub struct Registers {
-    a: u8,
-    f: u8,      // Flags
-    b: u8,
-    c: u8,
-    d: u8,
-    e: u8,
-    h: u8,
-    l: u8,
-    sp: u16,    // Stack Pointer
-    pc: u16,    // Program Counter
+    pub(crate) a: u8,
+    pub(crate) f: u8,      // Flags
+    pub(crate) b: u8,
+    pub(crate) c: u8,
+    pub(crate) d: u8,
+    pub(crate) e: u8,
+    pub(crate) h: u8,
+    pub(crate) l: u8,
+    pub(crate) sp: u16,    // Stack Pointer
+    pub(crate) pc: u16,    // Program Counter
 }
 
 #[derive(Clone, Copy)]

@@ -3,11 +3,21 @@ name = "nemu-core"
 version = "0.1.0"
 edition = "2024"
 
+[[bin]]
+name = "nemu-core"
+path = "src/main.rs"
+required-features = ["debugger"]
+
+[features]
+default = []
+debugger = ["dep:eframe"]
+
 [dependencies]
+eframe = { version = "0.33.2", optional = true }
 
 [profile.release]
-opt-level = 'z'
+opt-level = "z"
 lto = true
 codegen-units = 1
-panic = 'abort'
+panic = "abort"
 strip = true

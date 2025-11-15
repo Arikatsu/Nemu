@@ -5,9 +5,14 @@ mod timer;
 mod ppu;
 mod interrupts;
 
+#[cfg(feature = "debugger")]
+pub mod debugger;
+#[cfg(feature = "debugger")]
+pub use debugger::Debugger;
+
 pub struct Nemu {
-    cpu: cpu::Cpu,
-    bus: bus::Bus,
+    pub(crate) cpu: cpu::Cpu,
+    pub(crate) bus: bus::Bus,
 }
 
 impl Default for Nemu {

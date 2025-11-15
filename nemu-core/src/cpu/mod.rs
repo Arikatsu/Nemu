@@ -9,8 +9,8 @@ use utils::*;
 
 pub struct Cpu {
     pub(crate) regs: Registers,
-    ime: InterruptMode,
-    halted: bool,
+    pub(crate) ime: InterruptMode,
+    pub(crate) halted: bool,
 }
 
 impl Cpu {

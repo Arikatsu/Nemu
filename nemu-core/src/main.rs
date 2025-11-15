@@ -1,9 +1,15 @@
-use nemu_core::Nemu;
+use nemu_core::Debugger;
+use eframe::egui;
 
-fn main() {
-    let mut nemu = Nemu::with_rom("tests/cpu_instrs/individual/02-interrupts.gb").expect("Failed to load ROM");
+fn main() -> eframe::Result<()> {
+    let options = eframe::NativeOptions {
+        viewport: egui::ViewportBuilder::default().with_maximized(true),
+        ..Default::default()
+    };
 
-    for _ in 0..500_000 {
-        nemu.step();
-    }
+    eframe::run_native(
+        "Nemu Debugger",
+        options,
+        Box::new(|_cc| Ok(Box::<Debugger>::default())),
+    )
 }

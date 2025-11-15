@@ -2,13 +2,13 @@ use crate::ppu::Ppu;
 use crate::timer::Timer;
 
 pub(crate) struct Bus {
-    cartridge: [u8; 0x8000], // 32KB Cartridge ROM
-    eram: [u8; 0x2000],      // 8KB External RAM
-    wram: [u8; 0x2000],      // 8KB Work RAM
-    io: [u8; 0x80],          // I/O Registers
-    hram: [u8; 0x7F],        // High RAM
-    ie: u8,                  // Interrupt Enable Register
-    timer: Timer,
+    pub(crate) cartridge: [u8; 0x8000], // 32KB Cartridge ROM
+    pub(crate) eram: [u8; 0x2000],      // 8KB External RAM
+    pub(crate) wram: [u8; 0x2000],      // 8KB Work RAM
+    pub(crate) io: [u8; 0x80],          // I/O Registers
+    pub(crate) hram: [u8; 0x7F],        // High RAM
+    pub(crate) ie: u8,                  // Interrupt Enable Register
+    pub(crate) timer: Timer,
     pub(crate) ppu: Ppu,
 
     #[cfg(test)]
