@@ -1,9 +1,9 @@
-use nemu_core::Debugger;
 use eframe::egui;
+use nemu_core::Debugger;
 
 fn main() -> eframe::Result<()> {
     let options = eframe::NativeOptions {
-        viewport: egui::ViewportBuilder::default().with_maximized(true),
+        viewport: egui::ViewportBuilder::default().with_inner_size([1280.0, 720.0]),
         ..Default::default()
     };
 
