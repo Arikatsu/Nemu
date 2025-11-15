@@ -17,7 +17,9 @@ pub struct Ppu {
     mode: Mode,
     vram: [u8; 0x2000],
     oam: [u8; 0xA0],
+
     pub framebuffer: [[u8; SCREEN_WIDTH]; SCREEN_HEIGHT],
+    pub frame_ready: bool,
 }
 
 impl Ppu {
@@ -34,6 +36,7 @@ impl Ppu {
             vram: [0; 0x2000],
             oam: [0; 0xA0],
             framebuffer: [[0; SCREEN_WIDTH]; SCREEN_HEIGHT],
+            frame_ready: false,
         }
     }
 
@@ -49,6 +52,7 @@ impl Ppu {
         self.vram = [0; 0x2000];
         self.oam = [0; 0xA0];
         self.framebuffer = [[0; SCREEN_WIDTH]; SCREEN_HEIGHT];
+        self.frame_ready = false;
     }
 
     pub(crate) fn update(&mut self, cycles: u8) -> u8 {
@@ -149,6 +153,8 @@ impl Ppu {
                     if (self.stat & STAT_VBLANK_IRQ) != 0 {
                         irq_mask |= INT_LCDSTAT;
                     }
+
+                    self.frame_ready = true;
                 }
             }
             Mode::VBlank => {

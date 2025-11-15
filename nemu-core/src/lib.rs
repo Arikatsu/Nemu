@@ -49,7 +49,12 @@ impl Nemu {
     pub fn get_regs_snapshot(&self) -> String {
         self.cpu.regs.get_snapshot()
     }
-    pub fn get_framebuffer(&self) -> &[[u8; 160]; 144] {
+
+    pub fn has_frame(&self) -> bool {
+        self.bus.ppu.frame_ready
+    }
+
+    pub fn get_framebuffer(&mut self) -> &[[u8; 160]; 144] {
         &self.bus.ppu.framebuffer
     }
 }
@@ -60,11 +65,15 @@ mod tests {
 
     fn run_test_rom(path: &str) -> bool {
         let mut nemu = Nemu::with_rom(path).expect("Failed to load ROM");
+        let mut count = 10000;
 
-        for i in 0..10_000_000 {
+        for _ in 0..10_000_000 {
             nemu.step();
+            count -= 1;
 
-            if i % 10000 == 0 {
+            if count == 0 {
+                count = 10000;
+
                 let output = &nemu.bus.serial_output;
                 if output.contains("Passed") {
                     return true;
