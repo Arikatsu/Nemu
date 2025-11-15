@@ -242,8 +242,8 @@ impl Ppu {
         let tile_data_unsigned: bool = (self.lcdc & 0x10) != 0;
 
         for x in 0..SCREEN_WIDTH {
-            let x = x.wrapping_add(self.scx as usize);
-            let tile_num = self.vram[tilemap_base + (tile_row * 32) + (x / 8)];
+            let x_pos = x.wrapping_add(self.scx as usize) % 256;
+            let tile_num = self.vram[tilemap_base + (tile_row * 32) + (x_pos / 8)];
 
             let tile_addr = if tile_data_unsigned {
                 tile_num as usize * 16
@@ -255,7 +255,7 @@ impl Ppu {
             let byte1 = self.vram[line_addr];
             let byte2 = self.vram[line_addr + 1];
 
-            let bit_index = 7 - (x % 8);
+            let bit_index = 7 - (x_pos % 8);
             let color_bit0 = (byte1 >> bit_index) & 0x01;
             let color_bit1 = (byte2 >> bit_index) & 0x01;
             let color = (color_bit1 << 1) | color_bit0;
