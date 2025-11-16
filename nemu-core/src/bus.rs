@@ -33,7 +33,6 @@ impl Bus {
     }
 
     pub(crate) fn reset(&mut self) {
-        self.cartridge = [0; 0x8000];
         self.eram = [0; 0x2000];
         self.wram = [0; 0x2000];
         self.io = [0; 0x80];
@@ -78,6 +77,7 @@ impl Bus {
             0xFEA0..=0xFEFF => 0, // unusable
             0xFF04..=0xFF07 => self.timer.read(addr),
             0xFF40..=0xFF45 => self.ppu.read(addr),
+            0xFF00 => 0xCF, // joypad (not implemented)
             0xFF00..=0xFF7F => self.io[(addr - 0xFF00) as usize],
             0xFF80..=0xFFFE => self.hram[(addr - 0xFF80) as usize],
             0xFFFF => self.ie,

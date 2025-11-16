@@ -5,7 +5,7 @@ mod utils;
 use crate::bus::Bus;
 use instructions::*;
 use registers::{Reg8, Reg16, Registers};
-use utils::*;
+pub(crate) use utils::*;
 
 pub struct Cpu {
     pub(crate) regs: Registers,
@@ -351,7 +351,11 @@ impl Cpu {
             0xFF => rst(self, bus, 0x38),
 
             _ => {
-                panic!("Unknown opcode: 0x{:02X} at PC: 0x{:04X}", opcode, self.regs.pc() - 1);
+                panic!(
+                    "Unknown opcode: 0x{:02X} at PC: 0x{:04X}",
+                    opcode,
+                    self.regs.pc() - 1
+                );
             }
         }
     }
