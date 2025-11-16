@@ -18,7 +18,7 @@ pub struct Ppu {
     vram: [u8; 0x2000],
     oam: [u8; 0xA0],
 
-    pub framebuffer: [[u8; SCREEN_WIDTH]; SCREEN_HEIGHT],
+    pub framebuffer: [u8; SCREEN_WIDTH * SCREEN_HEIGHT],
     pub frame_ready: bool,
 }
 
@@ -35,7 +35,7 @@ impl Ppu {
             mode: Mode::OAMSearch,
             vram: [0; 0x2000],
             oam: [0; 0xA0],
-            framebuffer: [[0; SCREEN_WIDTH]; SCREEN_HEIGHT],
+            framebuffer: [0; SCREEN_WIDTH * SCREEN_HEIGHT],
             frame_ready: false,
         }
     }
@@ -51,7 +51,7 @@ impl Ppu {
         self.mode = Mode::OAMSearch;
         self.vram = [0; 0x2000];
         self.oam = [0; 0xA0];
-        self.framebuffer = [[0; SCREEN_WIDTH]; SCREEN_HEIGHT];
+        self.framebuffer = [0; SCREEN_WIDTH * SCREEN_HEIGHT];
         self.frame_ready = false;
     }
 
@@ -224,10 +224,8 @@ impl Ppu {
 
         if !bg_enabled {
             let y = self.ly as usize;
-            for x in 0..SCREEN_WIDTH {
-                self.framebuffer[y][x] = 0;
-            }
-
+            let row_start = y * SCREEN_WIDTH;
+            self.framebuffer[row_start..row_start + SCREEN_WIDTH].fill(0);
             return;
         }
 
@@ -238,7 +236,6 @@ impl Ppu {
         let tile_line = (y_pos % 8) as usize;
 
         let tilemap_base = if (self.lcdc & 0x08) != 0 { 0x1C00 } else { 0x1800 };
-
         let tile_data_unsigned: bool = (self.lcdc & 0x10) != 0;
 
         for x in 0..SCREEN_WIDTH {
@@ -260,7 +257,7 @@ impl Ppu {
             let color_bit1 = (byte2 >> bit_index) & 0x01;
             let color = (color_bit1 << 1) | color_bit0;
 
-            self.framebuffer[y][x] = color;
+            self.framebuffer[y * SCREEN_WIDTH + x] = color;
         }
     }
 }
