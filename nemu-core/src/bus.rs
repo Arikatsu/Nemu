@@ -127,4 +127,22 @@ impl Bus {
         self.write(addr, lo);
         self.write(addr + 1, hi);
     }
+
+    #[cfg(feature = "debugger")]
+    pub(crate) fn read_debug(&self, addr: u16) -> u8 {
+        match addr {
+            0x0000..=0x7FFF => self.cartridge[addr as usize],
+            0x8000..=0x9FFF => self.ppu.read(addr),
+            0xA000..=0xBFFF => self.eram[(addr - 0xA000) as usize],
+            0xC000..=0xDFFF => self.wram[(addr - 0xC000) as usize],
+            0xE000..=0xFDFF => self.wram[(addr - 0xE000) as usize], // Echo RAM
+            0xFE00..=0xFE9F => self.ppu.read(addr),
+            0xFEA0..=0xFEFF => 0, // unusable
+            0xFF04..=0xFF07 => self.timer.read(addr),
+            0xFF40..=0xFF45 => self.ppu.read(addr),
+            0xFF00..=0xFF7F => self.io[(addr - 0xFF00) as usize],
+            0xFF80..=0xFFFE => self.hram[(addr - 0xFF80) as usize],
+            0xFFFF => self.ie,
+        }
+    }
 }

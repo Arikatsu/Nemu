@@ -1,3 +1,5 @@
+mod disassembler;
+
 use crate::Nemu;
 use std::time::Instant;
 
@@ -37,20 +39,20 @@ pub struct Debugger {
     running: bool,
     last_update: Instant,
     tick_accumulator: f64,
+
+    disasm_base_pc: u16,
+    disasm_lines: Vec<(u16, String, String)>,
+    last_disasm_update: Instant,
 }
 
 impl Debugger {
     pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
-        let blank_image = egui::ColorImage::from_rgba_unmultiplied(
-            [WIDTH, HEIGHT],
-            &vec![0; WIDTH * HEIGHT * 4],
-        );
+        let blank_image =
+            egui::ColorImage::from_rgba_unmultiplied([WIDTH, HEIGHT], &vec![0; WIDTH * HEIGHT * 4]);
 
-        let screen_tex = cc.egui_ctx.load_texture(
-            "screen",
-            blank_image,
-            egui::TextureOptions::NEAREST,
-        );
+        let screen_tex =
+            cc.egui_ctx
+                .load_texture("screen", blank_image, egui::TextureOptions::NEAREST);
 
         Self {
             nemu: Nemu::default(),
@@ -62,6 +64,10 @@ impl Debugger {
             running: false,
             last_update: Instant::now(),
             tick_accumulator: 0.0,
+
+            disasm_base_pc: 0,
+            disasm_lines: Vec::new(),
+            last_disasm_update: Instant::now(),
         }
     }
 
@@ -91,6 +97,9 @@ impl Debugger {
                     eprintln!("Failed to load ROM: {}", e);
                 } else {
                     self.update_screen_texture();
+                    self.disasm_base_pc = self.nemu.cpu.regs.pc;
+                    self.disasm_lines.clear();
+                    self.last_disasm_update = Instant::now();
                 }
             }
 
@@ -109,12 +118,18 @@ impl Debugger {
                 }
                 self.nemu.step();
                 self.update_screen_texture();
+                self.disasm_base_pc = self.nemu.cpu.regs.pc;
+                self.disasm_lines.clear();
+                self.last_disasm_update = Instant::now();
             }
 
             if ui.button("🔄 Reset").clicked() {
                 self.nemu.reset();
                 self.running = false;
                 self.update_screen_texture();
+                self.disasm_base_pc = self.nemu.cpu.regs.pc;
+                self.disasm_lines.clear();
+                self.last_disasm_update = Instant::now();
             }
         });
     }
@@ -126,16 +141,31 @@ impl Debugger {
             .spacing([20.0, 6.0])
             .striped(true)
             .show(ui, |ui| {
-                ui.label("A"); ui.monospace(format!("{:02X}", regs.a));
-                ui.label("F"); ui.monospace(format!("{:02X}", regs.f)); ui.end_row();
-                ui.label("B"); ui.monospace(format!("{:02X}", regs.b));
-                ui.label("C"); ui.monospace(format!("{:02X}", regs.c)); ui.end_row();
-                ui.label("D"); ui.monospace(format!("{:02X}", regs.d));
-                ui.label("E"); ui.monospace(format!("{:02X}", regs.e)); ui.end_row();
-                ui.label("H"); ui.monospace(format!("{:02X}", regs.h));
-                ui.label("L"); ui.monospace(format!("{:02X}", regs.l)); ui.end_row();
-                ui.label("SP"); ui.monospace(format!("{:04X}", regs.sp));
-                ui.label("PC"); ui.monospace(format!("{:04X}", regs.pc)); ui.end_row();
+                ui.label("A");
+                ui.monospace(format!("{:02X}", regs.a));
+                ui.label("F");
+                ui.monospace(format!("{:02X}", regs.f));
+                ui.end_row();
+                ui.label("B");
+                ui.monospace(format!("{:02X}", regs.b));
+                ui.label("C");
+                ui.monospace(format!("{:02X}", regs.c));
+                ui.end_row();
+                ui.label("D");
+                ui.monospace(format!("{:02X}", regs.d));
+                ui.label("E");
+                ui.monospace(format!("{:02X}", regs.e));
+                ui.end_row();
+                ui.label("H");
+                ui.monospace(format!("{:02X}", regs.h));
+                ui.label("L");
+                ui.monospace(format!("{:02X}", regs.l));
+                ui.end_row();
+                ui.label("SP");
+                ui.monospace(format!("{:04X}", regs.sp));
+                ui.label("PC");
+                ui.monospace(format!("{:04X}", regs.pc));
+                ui.end_row();
             });
 
         ui.add_space(10.0);
@@ -149,7 +179,12 @@ impl Debugger {
             };
 
             egui::Frame::default()
-                .inner_margin(egui::Margin { left: 4, right: 4, top: 2, bottom: 2 })
+                .inner_margin(egui::Margin {
+                    left: 4,
+                    right: 4,
+                    top: 2,
+                    bottom: 2,
+                })
                 .show(ui, |ui| {
                     ui.colored_label(color, egui::RichText::new(label).heading().size(16.0));
                 });
@@ -163,7 +198,11 @@ impl Debugger {
 
             ui.separator();
 
-            flag(ui, "IME", self.nemu.cpu.ime != crate::cpu::InterruptMode::Disabled);
+            flag(
+                ui,
+                "IME",
+                self.nemu.cpu.ime != crate::cpu::InterruptMode::Disabled,
+            );
         });
     }
 }
@@ -192,6 +231,7 @@ impl eframe::App for Debugger {
                 self.update_screen_texture();
             }
 
+            self.update_disassembly();
             ctx.request_repaint();
         } else {
             self.last_update = Instant::now();
@@ -205,18 +245,25 @@ impl eframe::App for Debugger {
             });
 
         egui::Window::new("CPU")
-            .default_size([0.0, 0.0])
+            .default_size([240.0, 300.0])
             .show(ctx, |ui| {
-            self.render_cpu_window(ui);
-        });
+                self.render_cpu_window(ui);
+            });
+
+        egui::Window::new("Disassembly")
+            .default_pos([17.0, 280.0])
+            .default_size([240.0, 300.0])
+            .show(ctx, |ui| {
+                self.render_disassembly(ui);
+            });
 
         egui::Window::new("Screen")
-            .default_pos([260.0, 55.0])
+            .default_pos([290.0, 55.0])
             .show(ctx, |ui| {
-            ui.image(egui::ImageSource::Texture(egui::load::SizedTexture {
-                id: self.screen_tex.id(),
-                size: egui::vec2(WIDTH as f32 * 2.5, HEIGHT as f32 * 2.5),
-            }));
-        });
+                ui.image(egui::ImageSource::Texture(egui::load::SizedTexture {
+                    id: self.screen_tex.id(),
+                    size: egui::vec2(WIDTH as f32 * 2.5, HEIGHT as f32 * 2.5),
+                }));
+            });
     }
 }
