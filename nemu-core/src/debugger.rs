@@ -80,6 +80,92 @@ impl Debugger {
         self.screen_tex
             .set(color_image, egui::TextureOptions::NEAREST);
     }
+
+    fn render_header(&mut self, ui: &mut egui::Ui) {
+        ui.horizontal(|ui| {
+            ui.label("ROM Path:");
+            ui.text_edit_singleline(&mut self.rom_path);
+
+            if ui.button("Load").clicked() {
+                if let Err(e) = self.nemu.load_cartridge(&self.rom_path) {
+                    eprintln!("Failed to load ROM: {}", e);
+                } else {
+                    self.update_screen_texture();
+                }
+            }
+
+            ui.separator();
+
+            if ui
+                .button(if self.running { "⏸ Pause" } else { "▶ Run" })
+                .clicked()
+            {
+                self.running = !self.running;
+            }
+
+            if ui.button("⏭ Step").clicked() {
+                if self.running {
+                    self.running = false;
+                }
+                self.nemu.step();
+                self.update_screen_texture();
+            }
+
+            if ui.button("🔄 Reset").clicked() {
+                self.nemu.reset();
+                self.running = false;
+                self.update_screen_texture();
+            }
+        });
+    }
+
+    fn render_cpu_window(&mut self, ui: &mut egui::Ui) {
+        let regs = &self.nemu.cpu.regs;
+
+        egui::Grid::new("cpu_regs")
+            .spacing([20.0, 6.0])
+            .striped(true)
+            .show(ui, |ui| {
+                ui.label("A"); ui.monospace(format!("{:02X}", regs.a));
+                ui.label("F"); ui.monospace(format!("{:02X}", regs.f)); ui.end_row();
+                ui.label("B"); ui.monospace(format!("{:02X}", regs.b));
+                ui.label("C"); ui.monospace(format!("{:02X}", regs.c)); ui.end_row();
+                ui.label("D"); ui.monospace(format!("{:02X}", regs.d));
+                ui.label("E"); ui.monospace(format!("{:02X}", regs.e)); ui.end_row();
+                ui.label("H"); ui.monospace(format!("{:02X}", regs.h));
+                ui.label("L"); ui.monospace(format!("{:02X}", regs.l)); ui.end_row();
+                ui.label("SP"); ui.monospace(format!("{:04X}", regs.sp));
+                ui.label("PC"); ui.monospace(format!("{:04X}", regs.pc)); ui.end_row();
+            });
+
+        ui.add_space(10.0);
+        ui.separator();
+
+        let flag = |ui: &mut egui::Ui, label: &str, on: bool| {
+            let color = if on {
+                egui::Color32::from_rgb(0, 180, 230)
+            } else {
+                egui::Color32::from_rgb(80, 80, 80)
+            };
+
+            egui::Frame::default()
+                .inner_margin(egui::Margin { left: 4, right: 4, top: 2, bottom: 2 })
+                .show(ui, |ui| {
+                    ui.colored_label(color, egui::RichText::new(label).heading().size(16.0));
+                });
+        };
+
+        ui.horizontal(|ui| {
+            flag(ui, "Z", regs.zero_flag());
+            flag(ui, "N", regs.subtract_flag());
+            flag(ui, "H", regs.half_carry_flag());
+            flag(ui, "C", regs.carry_flag());
+
+            ui.separator();
+
+            flag(ui, "IME", self.nemu.cpu.ime != crate::cpu::InterruptMode::Disabled);
+        });
+    }
 }
 
 impl eframe::App for Debugger {
@@ -112,63 +198,25 @@ impl eframe::App for Debugger {
             ctx.request_repaint_after(std::time::Duration::from_millis(100));
         }
 
-        egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
-            ui.horizontal(|ui| {
-                ui.label("ROM Path:");
-                ui.text_edit_singleline(&mut self.rom_path);
-
-                if ui.button("Load").clicked() {
-                    if let Err(e) = self.nemu.load_cartridge(&self.rom_path) {
-                        eprintln!("Failed to load ROM: {}", e);
-                    } else {
-                        self.update_screen_texture(ctx);
-                    }
-                }
-
-                ui.separator();
-
-                if ui
-                    .button(if self.running { "⏸ Pause" } else { "▶ Run" })
-                    .clicked()
-                {
-                    self.running = !self.running;
-                }
-
-                if ui.button("⏭ Step").clicked() {
-                    self.nemu.step();
-                    self.update_screen_texture(ctx);
-                }
-            });
-        });
-
-        egui::SidePanel::left("left_panel")
-            .min_width(200.0)
+        egui::TopBottomPanel::top("header")
             .frame(egui::Frame::side_top_panel(&ctx.style()).inner_margin(10.0))
             .show(ctx, |ui| {
-                let regs = &self.nemu.cpu.regs;
-
-                ui.monospace(format!(
-                    "A:  0x{:02X}    F:  0x{:02X}\n\
-                 B:  0x{:02X}    C:  0x{:02X}\n\
-                 D:  0x{:02X}    E:  0x{:02X}\n\
-                 H:  0x{:02X}    L:  0x{:02X}",
-                    regs.a, regs.f, regs.b, regs.c, regs.d, regs.e, regs.h, regs.l,
-                ));
-                ui.separator();
-                ui.monospace(format!(
-                    "SP: 0x{:04X}\n\
-                 PC: 0x{:04X}",
-                    regs.sp, regs.pc,
-                ));
+                self.render_header(ui);
             });
 
-        egui::CentralPanel::default().show(ctx, |ui| {
-            if let Some(texture) = &self.screen_tex {
-                ui.image(egui::ImageSource::Texture(egui::load::SizedTexture {
-                    id: texture.id(),
-                    size: egui::vec2(WIDTH as f32 * 4.0, HEIGHT as f32 * 4.0),
-                }));
-            }
+        egui::Window::new("CPU")
+            .default_size([0.0, 0.0])
+            .show(ctx, |ui| {
+            self.render_cpu_window(ui);
+        });
+
+        egui::Window::new("Screen")
+            .default_pos([260.0, 55.0])
+            .show(ctx, |ui| {
+            ui.image(egui::ImageSource::Texture(egui::load::SizedTexture {
+                id: self.screen_tex.id(),
+                size: egui::vec2(WIDTH as f32 * 2.5, HEIGHT as f32 * 2.5),
+            }));
         });
     }
 }
