@@ -1,5 +1,5 @@
 use crate::Nemu;
-use std::time::{Duration, Instant};
+use std::time::Instant;
 
 use eframe::egui;
 
@@ -16,54 +16,69 @@ const SHADES: [[u8; 3]; 4] = [
     [0x08, 0x18, 0x20],
 ];
 
+const PALETTE_RGBA: [[u8; 4]; 256] = {
+    let mut table = [[0u8; 4]; 256];
+    let mut i = 0;
+    while i < 256 {
+        let color = i & 0x3;
+        table[i] = [SHADES[color][0], SHADES[color][1], SHADES[color][2], 255];
+        i += 1;
+    }
+    table
+};
+
 pub struct Debugger {
     nemu: Nemu,
     rom_path: String,
 
-    screen_tex: Option<egui::TextureHandle>,
-    framebuffer: Vec<u8>,
+    screen_pixels: Vec<u8>,
+    screen_tex: egui::TextureHandle,
 
     running: bool,
     last_update: Instant,
     tick_accumulator: f64,
 }
 
-impl Default for Debugger {
-    fn default() -> Self {
+impl Debugger {
+    pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
+        let blank_image = egui::ColorImage::from_rgba_unmultiplied(
+            [WIDTH, HEIGHT],
+            &vec![0; WIDTH * HEIGHT * 4],
+        );
+
+        let screen_tex = cc.egui_ctx.load_texture(
+            "screen",
+            blank_image,
+            egui::TextureOptions::NEAREST,
+        );
+
         Self {
             nemu: Nemu::default(),
             rom_path: String::new(),
 
-            screen_tex: None,
-            framebuffer: vec![0; WIDTH * HEIGHT * 3],
+            screen_tex,
+            screen_pixels: vec![0; WIDTH * HEIGHT * 4],
 
             running: false,
             last_update: Instant::now(),
             tick_accumulator: 0.0,
         }
     }
-}
 
-impl Debugger {
-    fn update_screen_texture(&mut self, ctx: &egui::Context) {
+    fn update_screen_texture(&mut self) {
         let fb = self.nemu.get_framebuffer();
 
-        for i in 0..(WIDTH * HEIGHT) {
-            let color = fb[i / WIDTH][i % WIDTH] & 0x3;
-            let rgb = &SHADES[color as usize];
-            let offset = i * 3;
-            self.framebuffer[offset..offset + 3].copy_from_slice(rgb);
+        for (i, &pixel) in fb.iter().enumerate() {
+            let rgba = &PALETTE_RGBA[pixel as usize];
+            let offset = i * 4;
+            self.screen_pixels[offset..offset + 4].copy_from_slice(rgba);
         }
 
-        let color_image = egui::ColorImage::from_rgb([WIDTH, HEIGHT], &self.framebuffer);
+        let color_image =
+            egui::ColorImage::from_rgba_unmultiplied([WIDTH, HEIGHT], &self.screen_pixels);
 
-        match &mut self.screen_tex {
-            Some(texture) => texture.set(color_image, egui::TextureOptions::NEAREST),
-            None => {
-                self.screen_tex =
-                    Some(ctx.load_texture("screen", color_image, egui::TextureOptions::NEAREST));
-            }
-        }
+        self.screen_tex
+            .set(color_image, egui::TextureOptions::NEAREST);
     }
 }
 
@@ -88,12 +103,13 @@ impl eframe::App for Debugger {
             self.tick_accumulator -= cycles_run as f64;
 
             if self.nemu.has_frame() {
-                self.update_screen_texture(ctx);
+                self.update_screen_texture();
             }
 
             ctx.request_repaint();
         } else {
             self.last_update = Instant::now();
+            ctx.request_repaint_after(std::time::Duration::from_millis(100));
         }
 
         egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
