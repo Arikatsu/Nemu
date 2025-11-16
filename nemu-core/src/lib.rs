@@ -50,11 +50,16 @@ impl Nemu {
         self.cpu.regs.get_snapshot()
     }
 
-    pub fn has_frame(&self) -> bool {
-        self.bus.ppu.frame_ready
+    pub fn has_frame(&mut self) -> bool {
+        if self.bus.ppu.frame_ready {
+            self.bus.ppu.frame_ready = false;
+            true
+        } else {
+            false
+        }
     }
 
-    pub fn get_framebuffer(&mut self) -> &[[u8; 160]; 144] {
+    pub fn get_framebuffer(&mut self) -> &[u8; 160 * 144] {
         &self.bus.ppu.framebuffer
     }
 }
