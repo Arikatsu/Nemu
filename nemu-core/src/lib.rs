@@ -46,10 +46,6 @@ impl Nemu {
         Ok(())
     }
 
-    pub fn get_regs_snapshot(&self) -> String {
-        self.cpu.regs.get_snapshot()
-    }
-
     pub fn has_frame(&mut self) -> bool {
         if self.bus.ppu.frame_ready {
             self.bus.ppu.frame_ready = false;

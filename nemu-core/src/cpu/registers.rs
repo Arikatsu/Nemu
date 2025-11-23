@@ -285,13 +285,6 @@ impl Registers {
         }
     }
 
-    pub fn get_snapshot(&self) -> String {
-        format!(
-            "A: {:02X} F: {:02X}\nB: {:02X} C: {:02X}\nD: {:02X} E: {:02X}\nH: {:02X} L: {:02X}",
-            self.a(), self.f(), self.b(), self.c(), self.d(), self.e(), self.h(), self.l(),
-        )
-    }
-
     #[inline(always)]
     pub fn sp(&self) -> u16 {
         self.sp
