@@ -126,7 +126,7 @@ impl Ppu {
                 self.mode = Mode::PixelTransfer;
             }
             Mode::PixelTransfer => {
-                self.render_scanline();
+                self.draw_scanline();
                 self.mode = Mode::HBlank;
 
                 if (self.stat & STAT_HBLANK_IRQ) != 0 {
@@ -188,7 +188,10 @@ impl Ppu {
         if !new_lcd_enabled && old_lcd_enabled {
             #[cfg(debug_assertions)]
             if self.mode != Mode::VBlank {
-                eprintln!("LCD turned off outside of VBlank (mode {})", self.mode as u8);
+                eprintln!(
+                    "LCD turned off outside of VBlank (mode {})",
+                    self.mode as u8
+                );
             }
 
             self.ly = 0;
@@ -219,45 +222,41 @@ impl Ppu {
         }
     }
 
-    fn render_scanline(&mut self) {
-        let bg_enabled = (self.lcdc & 0x01) != 0;
+    fn draw_scanline(&mut self) {
+        let start = (self.ly as usize) * SCREEN_WIDTH;
+        let end = start + SCREEN_WIDTH;
+        let scanline = &mut self.framebuffer[start..end];
 
-        if !bg_enabled {
-            let y = self.ly as usize;
-            let row_start = y * SCREEN_WIDTH;
-            self.framebuffer[row_start..row_start + SCREEN_WIDTH].fill(0);
-            return;
-        }
+        if (self.lcdc & 0x01) != 0 {
+            let y_pos = self.ly.wrapping_add(self.scy);
 
-        let y = self.ly as usize;
-        let y_pos = self.ly.wrapping_add(self.scy);
+            let tile_row = (y_pos / 8) as usize;
+            let tile_line = (y_pos % 8) as usize;
 
-        let tile_row = (y_pos / 8) as usize;
-        let tile_line = (y_pos % 8) as usize;
+            let tilemap_base = if (self.lcdc & 0x08) != 0 { 0x1C00 } else { 0x1800 };
+            let tile_data_unsigned: bool = (self.lcdc & 0x10) != 0;
 
-        let tilemap_base = if (self.lcdc & 0x08) != 0 { 0x1C00 } else { 0x1800 };
-        let tile_data_unsigned: bool = (self.lcdc & 0x10) != 0;
+            for x in 0..SCREEN_WIDTH {
+                let x_pos = x.wrapping_add(self.scx as usize) % 256;
+                let tile_num = self.vram[tilemap_base + (tile_row * 32) + (x_pos / 8)];
 
-        for x in 0..SCREEN_WIDTH {
-            let x_pos = x.wrapping_add(self.scx as usize) % 256;
-            let tile_num = self.vram[tilemap_base + (tile_row * 32) + (x_pos / 8)];
+                let tile_addr = if tile_data_unsigned {
+                    tile_num as usize * 16
+                } else {
+                    0x1000_i16.wrapping_add((tile_num as i8 as i16) * 16) as usize
+                };
 
-            let tile_addr = if tile_data_unsigned {
-                tile_num as usize * 16
-            } else {
-                0x1000_i16.wrapping_add((tile_num as i8 as i16) * 16) as usize
-            };
+                let line_addr = tile_addr + (tile_line * 2);
+                let byte1 = self.vram[line_addr];
+                let byte2 = self.vram[line_addr + 1];
 
-            let line_addr = tile_addr + (tile_line * 2);
-            let byte1 = self.vram[line_addr];
-            let byte2 = self.vram[line_addr + 1];
+                let bit_index = 7 - (x_pos % 8);
+                let color_bit0 = (byte1 >> bit_index) & 0x01;
+                let color_bit1 = (byte2 >> bit_index) & 0x01;
+                let color = (color_bit1 << 1) | color_bit0;
 
-            let bit_index = 7 - (x_pos % 8);
-            let color_bit0 = (byte1 >> bit_index) & 0x01;
-            let color_bit1 = (byte2 >> bit_index) & 0x01;
-            let color = (color_bit1 << 1) | color_bit0;
-
-            self.framebuffer[y * SCREEN_WIDTH + x] = color;
+                scanline[x] = color;
+            }
         }
     }
 }
