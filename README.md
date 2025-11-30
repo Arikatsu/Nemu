@@ -40,9 +40,9 @@ Features implemented so far:
 - [x] Bus and memory mapping (partial, will evolve as more features are implemented)
 - [x] Timer
 - [x] Interrupt handling
-- [x] Background rendering and PPU mode switching
 - [x] Debugger (partial, missing breakpoints specially. WIP)
-- [ ] Window and sprite rendering
+- [x] Background/Window rendering and PPU mode switching
+- [ ] Sprite rendering
 - [ ] Joypad input
 - [ ] MBC cartridges
 - [ ] Sound

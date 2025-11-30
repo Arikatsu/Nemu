@@ -13,8 +13,11 @@ pub struct Ppu {
     scx: u8,
     ly: u8,
     lyc: u8,
+    wy: u8,
+    wx: u8,
     dots: u16,
     mode: Mode,
+    wline_counter: u8,
     vram: [u8; 0x2000],
     oam: [u8; 0xA0],
 
@@ -31,8 +34,11 @@ impl Ppu {
             scx: 0,
             ly: 0,
             lyc: 0,
+            wy: 0,
+            wx: 0,
             dots: 0,
             mode: Mode::OAMSearch,
+            wline_counter: 0,
             vram: [0; 0x2000],
             oam: [0; 0xA0],
             framebuffer: [0; SCREEN_WIDTH * SCREEN_HEIGHT],
@@ -47,8 +53,11 @@ impl Ppu {
         self.scx = 0;
         self.ly = 0;
         self.lyc = 0;
+        self.wy = 0;
+        self.wx = 0;
         self.dots = 0;
         self.mode = Mode::OAMSearch;
+        self.wline_counter = 0;
         self.vram = [0; 0x2000];
         self.oam = [0; 0xA0];
         self.framebuffer = [0; SCREEN_WIDTH * SCREEN_HEIGHT];
@@ -96,6 +105,8 @@ impl Ppu {
             0xFF43 => self.scx,
             0xFF44 => self.ly,
             0xFF45 => self.lyc,
+            0xFF4A => self.wy,
+            0xFF4B => self.wx,
 
             _ => panic!("PPU read from invalid address: {:#06X}", addr),
         }
@@ -112,6 +123,8 @@ impl Ppu {
             0xFF43 => self.scx = value,
             0xFF44 => (), // LY is read-only
             0xFF45 => self.lyc = value,
+            0xFF4A => self.wy = value,
+            0xFF4B => self.wx = value,
 
             _ => panic!("PPU write to invalid address: {:#06X}", addr),
         }
@@ -167,6 +180,7 @@ impl Ppu {
                 if self.ly > 153 {
                     self.ly = 0;
                     self.mode = Mode::OAMSearch;
+                    self.wline_counter = 0;
 
                     if (self.stat & STAT_OAM_IRQ) != 0 {
                         irq_mask |= INT_LCDSTAT;
@@ -197,6 +211,7 @@ impl Ppu {
             self.ly = 0;
             self.dots = 0;
             self.mode = Mode::HBlank;
+            self.wline_counter = 0;
             self.stat = (self.stat & 0xFC) | (Mode::HBlank as u8);
         }
 
@@ -229,7 +244,6 @@ impl Ppu {
 
         if (self.lcdc & 0x01) != 0 {
             let y_pos = self.ly.wrapping_add(self.scy);
-
             let tile_row = (y_pos / 8) as usize;
             let tile_line = (y_pos % 8) as usize;
 
@@ -257,6 +271,38 @@ impl Ppu {
 
                 scanline[x] = color;
             }
+        }
+
+        if (self.lcdc & 0x20) != 0 && self.wy <= self.ly && self.wx < 167 {
+            let tile_row = (self.wline_counter / 8) as usize;
+            let tile_line = (self.wline_counter % 8) as usize;
+
+            let tilemap_base = if (self.lcdc & 0x40) != 0 { 0x1C00 } else { 0x1800 };
+            let loop_start = (self.wx as usize).saturating_sub(7);
+
+            for x in loop_start..SCREEN_WIDTH {
+                let window_x = x + 7 - (self.wx as usize);
+                let tile_num = self.vram[tilemap_base + (tile_row * 32) + (window_x / 8)];
+
+                let tile_addr = if (self.lcdc & 0x10) != 0 {
+                    tile_num as usize * 16
+                } else {
+                    0x1000_i16.wrapping_add((tile_num as i8 as i16) * 16) as usize
+                };
+
+                let line_addr = tile_addr + (tile_line * 2);
+                let byte1 = self.vram[line_addr];
+                let byte2 = self.vram[line_addr + 1];
+
+                let bit_index = 7 - (window_x % 8);
+                let color_bit0 = (byte1 >> bit_index) & 0x01;
+                let color_bit1 = (byte2 >> bit_index) & 0x01;
+                let color = (color_bit1 << 1) | color_bit0;
+
+                scanline[x] = color;
+            }
+
+            self.wline_counter = self.wline_counter.wrapping_add(1);
         }
     }
 }
