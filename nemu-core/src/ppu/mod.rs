@@ -13,6 +13,9 @@ pub struct Ppu {
     scx: u8,
     ly: u8,
     lyc: u8,
+    bgp: u8,
+    obp0: u8,
+    obp1: u8,
     wy: u8,
     wx: u8,
     dots: u16,
@@ -34,6 +37,9 @@ impl Ppu {
             scx: 0,
             ly: 0,
             lyc: 0,
+            bgp: 0,
+            obp0: 0,
+            obp1: 0,
             wy: 0,
             wx: 0,
             dots: 0,
@@ -105,6 +111,9 @@ impl Ppu {
             0xFF43 => self.scx,
             0xFF44 => self.ly,
             0xFF45 => self.lyc,
+            0xFF47 => self.bgp,
+            0xFF48 => self.obp0,
+            0xFF49 => self.obp1,
             0xFF4A => self.wy,
             0xFF4B => self.wx,
 
@@ -123,6 +132,9 @@ impl Ppu {
             0xFF43 => self.scx = value,
             0xFF44 => (), // LY is read-only
             0xFF45 => self.lyc = value,
+            0xFF47 => self.bgp = value,
+            0xFF48 => self.obp0 = value,
+            0xFF49 => self.obp1 = value,
             0xFF4A => self.wy = value,
             0xFF4B => self.wx = value,
 
@@ -242,6 +254,7 @@ impl Ppu {
         let end = start + SCREEN_WIDTH;
         let scanline = &mut self.framebuffer[start..end];
 
+        // Draw background
         if (self.lcdc & 0x01) != 0 {
             let y_pos = self.ly.wrapping_add(self.scy);
             let tile_row = (y_pos / 8) as usize;
@@ -267,12 +280,14 @@ impl Ppu {
                 let bit_index = 7 - (x_pos % 8);
                 let color_bit0 = (byte1 >> bit_index) & 0x01;
                 let color_bit1 = (byte2 >> bit_index) & 0x01;
-                let color = (color_bit1 << 1) | color_bit0;
+                let color_raw = (color_bit1 << 1) | color_bit0;
+                let color = (self.bgp >> (color_raw * 2)) & 0x03;
 
                 scanline[x] = color;
             }
         }
 
+        // Draw window
         if (self.lcdc & 0x20) != 0 && self.wy <= self.ly && self.wx < 167 {
             let tile_row = (self.wline_counter / 8) as usize;
             let tile_line = (self.wline_counter % 8) as usize;
@@ -297,7 +312,8 @@ impl Ppu {
                 let bit_index = 7 - (window_x % 8);
                 let color_bit0 = (byte1 >> bit_index) & 0x01;
                 let color_bit1 = (byte2 >> bit_index) & 0x01;
-                let color = (color_bit1 << 1) | color_bit0;
+                let color_raw = (color_bit1 << 1) | color_bit0;
+                let color = (self.bgp >> (color_raw * 2)) & 0x03;
 
                 scanline[x] = color;
             }
