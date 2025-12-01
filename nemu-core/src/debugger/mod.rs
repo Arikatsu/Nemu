@@ -9,7 +9,6 @@ const WIDTH: usize = 160;
 const HEIGHT: usize = 144;
 
 const GB_CYCLES_PER_SEC: f64 = 4_194_304.0;
-const MAX_CYCLES_PER_FRAME: i32 = 50000;
 
 const PALETTE: [u32; 4] = [
     u32::from_le_bytes([0xE0, 0xF8, 0xD0, 0xFF]),
@@ -306,28 +305,27 @@ impl eframe::App for Debugger {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         if self.running {
             let now = Instant::now();
-            let delta = now.duration_since(self.last_update).as_secs_f64();
+            let dt = now.duration_since(self.last_update).as_secs_f64();
             self.last_update = now;
 
-            let ticks_to_run = (delta * GB_CYCLES_PER_SEC) as i32;
-            self.tick_accumulator += ticks_to_run as f64;
+            const MAX_ACCUM: f64 = GB_CYCLES_PER_SEC / 20.0;
+            self.tick_accumulator += dt * GB_CYCLES_PER_SEC;
 
-            let cycles_this_frame = self.tick_accumulator.min(MAX_CYCLES_PER_FRAME as f64) as i32;
-
-            let mut cycles_run = 0;
-            while cycles_run < cycles_this_frame {
-                let ticks = self.nemu.step();
-                cycles_run += ticks as i32;
+            if self.tick_accumulator > MAX_ACCUM {
+                self.tick_accumulator = MAX_ACCUM;
             }
 
-            self.tick_accumulator -= cycles_run as f64;
+            while self.tick_accumulator > 0.0 {
+                let cycles = self.nemu.step();
+                self.tick_accumulator -= cycles as f64;
+            }
 
             if self.nemu.has_frame() {
                 self.update_screen_texture();
             }
 
             self.update_disassembly();
-            ctx.request_repaint();
+            ctx.request_repaint_after(std::time::Duration::from_millis(16));
         } else {
             self.last_update = Instant::now();
             ctx.request_repaint_after(std::time::Duration::from_millis(100));
