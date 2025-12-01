@@ -11,23 +11,12 @@ const HEIGHT: usize = 144;
 const GB_CYCLES_PER_SEC: f64 = 4_194_304.0;
 const MAX_CYCLES_PER_FRAME: i32 = 50000;
 
-const SHADES: [[u8; 3]; 4] = [
-    [0xE0, 0xF8, 0xD0],
-    [0x88, 0xC0, 0x70],
-    [0x34, 0x68, 0x56],
-    [0x08, 0x18, 0x20],
+const PALETTE: [u32; 4] = [
+    u32::from_le_bytes([0xE0, 0xF8, 0xD0, 0xFF]),
+    u32::from_le_bytes([0x88, 0xC0, 0x70, 0xFF]),
+    u32::from_le_bytes([0x34, 0x68, 0x56, 0xFF]),
+    u32::from_le_bytes([0x08, 0x18, 0x20, 0xFF]),
 ];
-
-const PALETTE_RGBA: [[u8; 4]; 256] = {
-    let mut table = [[0u8; 4]; 256];
-    let mut i = 0;
-    while i < 256 {
-        let color = i & 0x3;
-        table[i] = [SHADES[color][0], SHADES[color][1], SHADES[color][2], 255];
-        i += 1;
-    }
-    table
-};
 
 pub struct Debugger {
     nemu: Nemu,
@@ -82,10 +71,18 @@ impl Debugger {
     fn update_screen_texture(&mut self) {
         let fb = self.nemu.get_framebuffer();
 
-        for (i, &pixel) in fb.iter().enumerate() {
-            let rgba = &PALETTE_RGBA[pixel as usize];
-            let offset = i * 4;
-            self.screen_pixels[offset..offset + 4].copy_from_slice(rgba);
+        let pixels_u32 = unsafe {
+            std::slice::from_raw_parts_mut(
+                self.screen_pixels.as_mut_ptr() as *mut u32,
+                WIDTH * HEIGHT,
+            )
+        };
+
+        for i in 0..fb.len() {
+            unsafe {
+                *pixels_u32.get_unchecked_mut(i) =
+                    *PALETTE.get_unchecked(*fb.get_unchecked(i) as usize);
+            }
         }
 
         let color_image =
@@ -221,7 +218,7 @@ impl Debugger {
             ui.add(
                 egui::TextEdit::singleline(&mut self.memory_viewer_addr_input)
                     .desired_width(80.0)
-                    .font(egui::TextStyle::Monospace)
+                    .font(egui::TextStyle::Monospace),
             );
 
             if ui.button("Go").clicked() {
@@ -254,9 +251,11 @@ impl Debugger {
                 for row in 0..16 {
                     let row_addr = self.memory_viewer_addr.wrapping_add((row * 16) as u16);
 
-                    ui.label(egui::RichText::new(format!("0x{:04X}:", row_addr))
-                        .monospace()
-                        .color(egui::Color32::from_rgb(150, 150, 150)));
+                    ui.label(
+                        egui::RichText::new(format!("{:04X}:", row_addr))
+                            .monospace()
+                            .color(egui::Color32::from_rgb(150, 150, 150)),
+                    );
 
                     let mut hex_parts = Vec::new();
                     let mut ascii = String::new();
@@ -280,9 +279,11 @@ impl Debugger {
                     let hex_str = hex_parts.join(" ");
                     ui.monospace(hex_str);
 
-                    ui.label(egui::RichText::new(ascii)
-                        .monospace()
-                        .color(egui::Color32::from_rgb(180, 180, 180)));
+                    ui.label(
+                        egui::RichText::new(ascii)
+                            .monospace()
+                            .color(egui::Color32::from_rgb(180, 180, 180)),
+                    );
 
                     ui.end_row();
                 }
