@@ -5,7 +5,7 @@ pub(super) struct FpsTracker {
 }
 
 impl FpsTracker {
-    pub fn new() -> Self {
+    pub(super) fn new() -> Self {
         Self {
             frame_count: 0,
             last_instant: std::time::Instant::now(),
@@ -13,7 +13,7 @@ impl FpsTracker {
         }
     }
 
-    pub fn update(&mut self) {
+    pub(super) fn update(&mut self) {
         self.frame_count += 1;
         let now = std::time::Instant::now();
         let duration = now.duration_since(self.last_instant);
@@ -24,7 +24,7 @@ impl FpsTracker {
         }
     }
     
-    pub fn reset(&mut self) {
+    pub(super) fn reset(&mut self) {
         self.frame_count = 0;
         self.last_instant = std::time::Instant::now();
         self.fps = 0.0;
