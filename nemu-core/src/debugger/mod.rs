@@ -296,7 +296,7 @@ impl Debugger {
         let bus = &self.nemu.bus;
         for i in 0..256 {
             let addr = self.memory_viewer_addr.wrapping_add(i as u16);
-            self.memory_viewer_data.push(bus.read_debug(addr));
+            self.memory_viewer_data.push(bus.peek(addr));
         }
     }
 }

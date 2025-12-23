@@ -15,15 +15,15 @@ impl Debugger {
         let result = match info.operand {
             Operand::None => String::from(info.mnemonic_prefix),
             Operand::U8 => {
-                let val = bus.read_debug(pc + 1);
+                let val = bus.peek(pc + 1);
                 format!(
                     "{}${:02X}{}",
                     info.mnemonic_prefix, val, info.mnemonic_suffix
                 )
             }
             Operand::U16 => {
-                let lo = bus.read_debug(pc + 1);
-                let hi = bus.read_debug(pc + 2);
+                let lo = bus.peek(pc + 1);
+                let hi = bus.peek(pc + 2);
                 let val = (hi as u16) << 8 | (lo as u16);
                 format!(
                     "{}${:04X}{}",
@@ -31,7 +31,7 @@ impl Debugger {
                 )
             }
             Operand::I8 => {
-                let offset = bus.read_debug(pc + 1) as i8;
+                let offset = bus.peek(pc + 1) as i8;
                 let target = (next_pc as i32 + offset as i32) as u16;
                 format!(
                     "{}${:04X}{}",
@@ -64,9 +64,9 @@ impl Debugger {
         let mut bytes_consumed = 0;
 
         while self.disasm_lines.len() < DISASM_WINDOW_SIZE && bytes_consumed < DISASM_MAX_BYTES {
-            let opcode = self.nemu.bus.read_debug(addr);
+            let opcode = self.nemu.bus.peek(addr);
             let info = if opcode == 0xCB {
-                let cb_opcode = self.nemu.bus.read_debug(addr.wrapping_add(1));
+                let cb_opcode = self.nemu.bus.peek(addr.wrapping_add(1));
                 &CB_OPCODES[cb_opcode as usize]
             } else {
                 &OPCODES[opcode as usize]
@@ -74,7 +74,7 @@ impl Debugger {
             let len = info.length.max(1) as u16;
 
             let bytes_str = (0..len)
-                .map(|i| format!("{:02X}", self.nemu.bus.read_debug(addr.wrapping_add(i))))
+                .map(|i| format!("{:02X}", self.nemu.bus.peek(addr.wrapping_add(i))))
                 .fold(String::new(), |mut acc, s| {
                     if !acc.is_empty() {
                         acc.push(' ');
