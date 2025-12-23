@@ -113,6 +113,7 @@ impl Bus {
             }
             0xFF04..=0xFF07 => self.timer.write(addr, data),
             0xFF40..=0xFF45 => self.ppu.write(addr, data),
+            0xFF46 => self.transfer_dma(data),
             0xFF47..=0xFF4B => self.ppu.write(addr, data),
             0xFF00..=0xFF7F => self.io[(addr - 0xFF00) as usize] = data,
             0xFF80..=0xFFFE => self.hram[(addr - 0xFF80) as usize] = data,
@@ -132,5 +133,13 @@ impl Bus {
         let [lo, hi] = data.to_le_bytes();
         self.write(addr, lo);
         self.write(addr + 1, hi);
+    }
+
+    fn transfer_dma(&mut self, start_addr: u8) {
+        let base_addr = (start_addr as u16) << 8;
+        for i in 0..0xA0 {
+            let data = self.read(base_addr + i);
+            self.ppu.write(0xFE00 + i, data);
+        }
     }
 }
