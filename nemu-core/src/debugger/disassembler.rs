@@ -3,12 +3,33 @@ use crate::bus::Bus;
 
 use eframe::egui;
 use std::time::Instant;
+use crate::Nemu;
 
 const DISASM_WINDOW_SIZE: usize = 30;
 const DISASM_MAX_BYTES: usize = 0x100;
 const DISASM_REFRESH_MS: u64 = 150;
 
-impl Debugger {
+pub(super) struct Disassembler {
+    disasm_base_pc: u16,
+    disasm_lines: Vec<(u16, String, String)>,
+    last_disasm_update: Instant,
+}
+
+impl Disassembler {
+    pub(super) fn new() -> Self {
+        Self {
+            disasm_base_pc: 0,
+            disasm_lines: Vec::new(),
+            last_disasm_update: Instant::now(),
+        }
+    }
+    
+    pub(super) fn update(&mut self, pc: u16) {
+        self.disasm_base_pc = pc;
+        self.disasm_lines.clear();
+        self.last_disasm_update = Instant::now();
+    }
+    
     fn disassemble(info: &OpcodeInfo, bus: &Bus, pc: u16) -> String {
         let next_pc = pc.wrapping_add(info.length as u16);
 
@@ -43,8 +64,7 @@ impl Debugger {
         result
     }
 
-    fn needs_disassemble_rebuild(&self) -> bool {
-        let pc = self.nemu.cpu.regs.pc;
+    fn needs_disassemble_rebuild(&self, pc: u16) -> bool {
         let first_addr = match self.disasm_lines.first() {
             Some((addr, _, _)) => *addr,
             None => return true,
@@ -57,16 +77,16 @@ impl Debugger {
         pc < first_addr || pc > last_addr
     }
 
-    fn rebuild_disassembly_window(&mut self) {
+    fn rebuild_disassembly_window(&mut self, nemu: &Nemu) {
         self.disasm_lines.clear();
 
-        let mut addr = self.nemu.cpu.regs.pc;
+        let mut addr = nemu.cpu.regs.pc;
         let mut bytes_consumed = 0;
 
         while self.disasm_lines.len() < DISASM_WINDOW_SIZE && bytes_consumed < DISASM_MAX_BYTES {
-            let opcode = self.nemu.bus.peek(addr);
+            let opcode = nemu.bus.peek(addr);
             let info = if opcode == 0xCB {
-                let cb_opcode = self.nemu.bus.peek(addr.wrapping_add(1));
+                let cb_opcode = nemu.bus.peek(addr.wrapping_add(1));
                 &CB_OPCODES[cb_opcode as usize]
             } else {
                 &OPCODES[opcode as usize]
@@ -74,7 +94,7 @@ impl Debugger {
             let len = info.length.max(1) as u16;
 
             let bytes_str = (0..len)
-                .map(|i| format!("{:02X}", self.nemu.bus.peek(addr.wrapping_add(i))))
+                .map(|i| format!("{:02X}", nemu.bus.peek(addr.wrapping_add(i))))
                 .fold(String::new(), |mut acc, s| {
                     if !acc.is_empty() {
                         acc.push(' ');
@@ -83,7 +103,7 @@ impl Debugger {
                     acc
                 });
 
-            let instruction = Self::disassemble(info, &self.nemu.bus, addr);
+            let instruction = Self::disassemble(info, &nemu.bus, addr);
 
             self.disasm_lines.push((addr, bytes_str, instruction));
 
@@ -91,14 +111,10 @@ impl Debugger {
             bytes_consumed += len as usize;
         }
 
-        self.disasm_base_pc = self.nemu.cpu.regs.pc;
+        self.disasm_base_pc = nemu.cpu.regs.pc;
     }
 
-    pub(crate) fn update_disassembly(&mut self) {
-        if !self.running {
-            return;
-        }
-
+    pub(super) fn update_disassembly(&mut self, nemu: &Nemu) {
         let now = Instant::now();
         if now.duration_since(self.last_disasm_update)
             < std::time::Duration::from_millis(DISASM_REFRESH_MS)
@@ -106,16 +122,15 @@ impl Debugger {
             return;
         }
 
-        self.rebuild_disassembly_window();
+        self.rebuild_disassembly_window(nemu);
         self.last_disasm_update = now;
     }
 
-    pub(crate) fn render_disassembly(&mut self, ui: &mut egui::Ui) {
-        if !self.running && self.needs_disassemble_rebuild() {
-            self.rebuild_disassembly_window();
+    pub(super) fn render_disassembly(&mut self, ui: &mut egui::Ui, nemu: &Nemu, debugger_running: bool) {
+        let pc = nemu.cpu.regs.pc;
+        if !debugger_running && self.needs_disassemble_rebuild(pc) {
+            self.rebuild_disassembly_window(nemu);
         }
-
-        let pc = self.nemu.cpu.regs.pc;
 
         egui::ScrollArea::vertical()
             .id_salt("disassembly_scroll")

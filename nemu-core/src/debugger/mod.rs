@@ -5,7 +5,8 @@ use crate::Nemu;
 use std::time::Instant;
 
 use eframe::egui;
-use crate::debugger::fps_tracker::FpsTracker;
+use disassembler::Disassembler;
+use fps_tracker::FpsTracker;
 
 const WIDTH: usize = 160;
 const HEIGHT: usize = 144;
@@ -30,14 +31,11 @@ pub struct Debugger {
     last_update: Instant,
     tick_accumulator: f64,
 
-    disasm_base_pc: u16,
-    disasm_lines: Vec<(u16, String, String)>,
-    last_disasm_update: Instant,
-
     memory_viewer_addr: u16,
     memory_viewer_addr_input: String,
     memory_viewer_data: Vec<u8>,
 
+    disassembler: Disassembler,
     fps_tracker: FpsTracker,
 }
 
@@ -61,14 +59,11 @@ impl Debugger {
             last_update: Instant::now(),
             tick_accumulator: 0.0,
 
-            disasm_base_pc: 0,
-            disasm_lines: Vec::new(),
-            last_disasm_update: Instant::now(),
-
             memory_viewer_addr: 0,
             memory_viewer_addr_input: "0000".to_string(),
             memory_viewer_data: vec![0; 256],
 
+            disassembler: Disassembler::new(),
             fps_tracker: FpsTracker::new(),
         }
     }
@@ -107,9 +102,7 @@ impl Debugger {
                     eprintln!("Failed to load ROM: {}", e);
                 } else {
                     self.update_screen_texture();
-                    self.disasm_base_pc = self.nemu.cpu.regs.pc;
-                    self.disasm_lines.clear();
-                    self.last_disasm_update = Instant::now();
+                    self.disassembler.update(self.nemu.cpu.regs.pc);
                     self.refresh_memory_view();
                 }
             }
@@ -129,18 +122,14 @@ impl Debugger {
                 }
                 self.nemu.step();
                 self.update_screen_texture();
-                self.disasm_base_pc = self.nemu.cpu.regs.pc;
-                self.disasm_lines.clear();
-                self.last_disasm_update = Instant::now();
+                self.disassembler.update(self.nemu.cpu.regs.pc);
             }
 
             if ui.button("🔄 Reset").clicked() {
                 self.nemu.reset();
                 self.running = false;
                 self.update_screen_texture();
-                self.disasm_base_pc = self.nemu.cpu.regs.pc;
-                self.disasm_lines.clear();
-                self.last_disasm_update = Instant::now();
+                self.disassembler.update(self.nemu.cpu.regs.pc);
                 self.fps_tracker.reset();
             }
 
@@ -336,7 +325,7 @@ impl eframe::App for Debugger {
                 self.fps_tracker.update();
             }
 
-            self.update_disassembly();
+            self.disassembler.update_disassembly(&self.nemu);
             ctx.request_repaint_after(std::time::Duration::from_millis(16));
         } else {
             self.last_update = Instant::now();
@@ -359,7 +348,7 @@ impl eframe::App for Debugger {
             .default_pos([17.0, 280.0])
             .default_size([240.0, 300.0])
             .show(ctx, |ui| {
-                self.render_disassembly(ui);
+                self.disassembler.render_disassembly(ui, &self.nemu, self.running);
             });
 
         egui::Window::new("Screen")
