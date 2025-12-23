@@ -24,7 +24,7 @@ const PALETTE: [u32; 4] = [
 
 pub struct Debugger {
     nemu: Nemu,
-    rom_path: String,
+    cur_rom: String,
 
     screen_pixels: Vec<u8>,
     screen_tex: egui::TextureHandle,
@@ -49,7 +49,7 @@ impl Debugger {
 
         Self {
             nemu: Nemu::default(),
-            rom_path: String::new(),
+            cur_rom: String::new(),
 
             screen_tex,
             screen_pixels: vec![0; WIDTH * HEIGHT * 4],
@@ -90,48 +90,59 @@ impl Debugger {
 
     fn render_header(&mut self, ui: &mut egui::Ui) {
         ui.horizontal(|ui| {
-            ui.label("ROM Path:");
-            ui.text_edit_singleline(&mut self.rom_path);
 
-            if ui.button("Load").clicked() {
-                if let Err(e) = self.nemu.load_cartridge(&self.rom_path) {
-                    eprintln!("Failed to load ROM: {}", e);
-                } else {
+            if ui.button("📂").on_hover_text("Open ROM").clicked() {
+                if let Some(path) = rfd::FileDialog::new()
+                    .add_filter("GameBoy", &["gb", "bin"])
+                    .pick_file()
+                {
+                    if let Err(e) = self.nemu.load_cartridge(&path) {
+                        eprintln!("Failed to load ROM: {}", e);
+                    } else {
+                        self.cur_rom = path.file_name()
+                            .and_then(|name| name.to_str())
+                            .unwrap_or("Unknown")
+                            .to_string();
+
+                        self.update_screen_texture();
+                        self.disassembler.update(self.nemu.cpu.regs.pc);
+                        self.memory_viewer.refresh_memory_view(&self.nemu.bus);
+                    }
+                }
+            }
+
+            ui.separator();
+
+            if !self.cur_rom.is_empty() {
+                ui.label(egui::RichText::new(&self.cur_rom).monospace());
+            } else {
+                ui.label(egui::RichText::new("No ROM Loaded").italics().weak());
+            }
+
+            ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                ui.label(format!("FPS: {:.2}", self.fps_tracker.fps));
+
+                ui.separator();
+
+                if ui.button("🔄 Reset").clicked() {
+                    self.nemu.reset();
+                    self.running = false;
                     self.update_screen_texture();
                     self.disassembler.update(self.nemu.cpu.regs.pc);
-                    self.memory_viewer.refresh_memory_view(&self.nemu.bus);
+                    self.fps_tracker.reset();
                 }
-            }
 
-            ui.separator();
-
-            if ui
-                .button(if self.running { "⏸ Pause" } else { "▶ Run" })
-                .clicked()
-            {
-                self.running = !self.running;
-            }
-
-            if ui.button("⏭ Step").clicked() {
-                if self.running {
+                if ui.button("⏭ Step").clicked() {
                     self.running = false;
+                    self.nemu.step();
+                    self.update_screen_texture();
+                    self.disassembler.update(self.nemu.cpu.regs.pc);
                 }
-                self.nemu.step();
-                self.update_screen_texture();
-                self.disassembler.update(self.nemu.cpu.regs.pc);
-            }
 
-            if ui.button("🔄 Reset").clicked() {
-                self.nemu.reset();
-                self.running = false;
-                self.update_screen_texture();
-                self.disassembler.update(self.nemu.cpu.regs.pc);
-                self.fps_tracker.reset();
-            }
-
-            ui.separator();
-
-            ui.label(format!("FPS: {:.2}", self.fps_tracker.fps));
+                if ui.button(if self.running { "⏸ Pause" } else { "▶ Run" }).clicked() {
+                    self.running = !self.running;
+                }
+            });
         });
     }
 

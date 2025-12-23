@@ -1,4 +1,3 @@
-use super::Debugger;
 use crate::bus::Bus;
 
 use eframe::egui;
@@ -23,13 +22,13 @@ impl Disassembler {
             last_disasm_update: Instant::now(),
         }
     }
-    
+
     pub(super) fn update(&mut self, pc: u16) {
         self.disasm_base_pc = pc;
         self.disasm_lines.clear();
         self.last_disasm_update = Instant::now();
     }
-    
+
     fn disassemble(info: &OpcodeInfo, bus: &Bus, pc: u16) -> String {
         let next_pc = pc.wrapping_add(info.length as u16);
 
