@@ -1,9 +1,11 @@
 mod disassembler;
+mod fps_tracker;
 
 use crate::Nemu;
 use std::time::Instant;
 
 use eframe::egui;
+use crate::debugger::fps_tracker::FpsTracker;
 
 const WIDTH: usize = 160;
 const HEIGHT: usize = 144;
@@ -35,6 +37,8 @@ pub struct Debugger {
     memory_viewer_addr: u16,
     memory_viewer_addr_input: String,
     memory_viewer_data: Vec<u8>,
+
+    fps_tracker: FpsTracker,
 }
 
 impl Debugger {
@@ -64,6 +68,8 @@ impl Debugger {
             memory_viewer_addr: 0,
             memory_viewer_addr_input: "0000".to_string(),
             memory_viewer_data: vec![0; 256],
+
+            fps_tracker: FpsTracker::new(),
         }
     }
 
@@ -135,7 +141,12 @@ impl Debugger {
                 self.disasm_base_pc = self.nemu.cpu.regs.pc;
                 self.disasm_lines.clear();
                 self.last_disasm_update = Instant::now();
+                self.fps_tracker.reset();
             }
+
+            ui.separator();
+
+            ui.label(format!("FPS: {:.2}", self.fps_tracker.fps));
         });
     }
 
@@ -322,6 +333,7 @@ impl eframe::App for Debugger {
 
             if self.nemu.has_frame() {
                 self.update_screen_texture();
+                self.fps_tracker.update();
             }
 
             self.update_disassembly();
