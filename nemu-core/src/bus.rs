@@ -1,5 +1,6 @@
 use crate::ppu::Ppu;
 use crate::timer::Timer;
+use crate::joypad::Joypad;
 
 pub(crate) struct Bus {
     pub(crate) cartridge: [u8; 0x8000], // 32KB Cartridge ROM
@@ -10,6 +11,7 @@ pub(crate) struct Bus {
     pub(crate) ie: u8,                  // Interrupt Enable Register
     pub(crate) timer: Timer,
     pub(crate) ppu: Ppu,
+    pub(crate) joypad: Joypad,
 
     #[cfg(test)]
     pub(crate) serial_output: String,
@@ -26,6 +28,7 @@ impl Bus {
             ie: 0,
             timer: Timer::new(),
             ppu: Ppu::new(),
+            joypad: Joypad::new(),
 
             #[cfg(test)]
             serial_output: String::new(),
@@ -54,8 +57,9 @@ impl Bus {
     pub(crate) fn tick(&mut self, cycles: u8) {
         let ppu_irq_mask = self.ppu.update(cycles);
         let timer_irq_mask = self.timer.update(cycles);
+        let joypad_irq_mask = self.joypad.poll_interrupt();
 
-        self.io[0x0F] |= ppu_irq_mask | timer_irq_mask;
+        self.io[0x0F] |= ppu_irq_mask | timer_irq_mask | joypad_irq_mask;
     }
 
     #[inline(always)]
@@ -76,7 +80,7 @@ impl Bus {
             0xFF04..=0xFF07 => self.timer.read(addr),
             0xFF40..=0xFF45 => self.ppu.read(addr),
             0xFF47..=0xFF4B => self.ppu.read(addr),
-            0xFF00 => 0xCF, // joypad (not implemented)
+            0xFF00 => self.joypad.read(),
             0xFF00..=0xFF7F => self.io[(addr - 0xFF00) as usize],
             0xFF80..=0xFFFE => self.hram[(addr - 0xFF80) as usize],
             0xFFFF => self.ie,
@@ -115,6 +119,7 @@ impl Bus {
             0xFF40..=0xFF45 => self.ppu.write(addr, data),
             0xFF46 => self.transfer_dma(data),
             0xFF47..=0xFF4B => self.ppu.write(addr, data),
+            0xFF00 => self.joypad.write(data),
             0xFF00..=0xFF7F => self.io[(addr - 0xFF00) as usize] = data,
             0xFF80..=0xFFFE => self.hram[(addr - 0xFF80) as usize] = data,
             0xFFFF => self.ie = data,
@@ -138,7 +143,7 @@ impl Bus {
     fn transfer_dma(&mut self, start_addr: u8) {
         let base_addr = (start_addr as u16) << 8;
         for i in 0..0xA0 {
-            let data = self.read(base_addr + i);
+            let data = self.peek(base_addr + i);
             self.ppu.write(0xFE00 + i, data);
         }
     }

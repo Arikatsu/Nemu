@@ -4,11 +4,14 @@ mod cpu;
 mod timer;
 mod ppu;
 mod interrupts;
+mod joypad;
 
 #[cfg(feature = "debugger")]
 pub mod debugger;
+
 #[cfg(feature = "debugger")]
 pub use debugger::Debugger;
+pub use joypad::JoypadButton;
 
 pub struct Nemu {
     pub(crate) cpu: cpu::Cpu,
@@ -44,6 +47,10 @@ impl Nemu {
         let data = std::fs::read(path)?;
         self.bus.load_cartridge_bytes(&data);
         Ok(())
+    }
+    
+    pub fn set_joypad(&mut self, input: JoypadButton, pressed: bool, is_direction: bool) {
+        self.bus.joypad.set_joypad(input, pressed, is_direction);
     }
 
     pub fn has_frame(&mut self) -> bool {

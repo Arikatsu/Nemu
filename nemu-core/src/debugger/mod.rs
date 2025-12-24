@@ -217,11 +217,33 @@ impl Debugger {
             );
         });
     }
+
+    fn handle_input(&mut self, ctx: &egui::Context) {
+        if ctx.wants_keyboard_input() {
+            return;
+        }
+
+        ctx.input(|i| {
+           let joypad = &mut self.nemu.bus.joypad;
+
+            joypad.set_joypad(crate::JoypadButton::RightOrA, i.key_down(egui::Key::Z), false);
+            joypad.set_joypad(crate::JoypadButton::LeftOrB, i.key_down(egui::Key::X), false);
+            joypad.set_joypad(crate::JoypadButton::DownOrStart, i.key_down(egui::Key::Enter), false);
+            joypad.set_joypad(crate::JoypadButton::UpOrSelect, i.key_down(egui::Key::Space), false);
+
+            joypad.set_joypad(crate::JoypadButton::RightOrA, i.key_down(egui::Key::ArrowRight), true);
+            joypad.set_joypad(crate::JoypadButton::LeftOrB, i.key_down(egui::Key::ArrowLeft), true);
+            joypad.set_joypad(crate::JoypadButton::DownOrStart, i.key_down(egui::Key::ArrowDown), true);
+            joypad.set_joypad(crate::JoypadButton::UpOrSelect, i.key_down(egui::Key::ArrowUp), true);
+        });
+    }
 }
 
 impl eframe::App for Debugger {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         if self.running {
+            self.handle_input(ctx);
+
             let now = Instant::now();
             let dt = now.duration_since(self.last_update).as_secs_f64();
             self.last_update = now;
