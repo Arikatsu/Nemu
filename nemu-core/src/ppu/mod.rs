@@ -253,6 +253,7 @@ impl Ppu {
         let start = (self.ly as usize) * SCREEN_WIDTH;
         let end = start + SCREEN_WIDTH;
         let scanline = &mut self.framebuffer[start..end];
+        let mut bg_priority: [bool; SCREEN_WIDTH] = [false; SCREEN_WIDTH];
 
         // Draw background
         if (self.lcdc & 0x01) != 0 {
@@ -283,6 +284,7 @@ impl Ppu {
                 let color_raw = (color_bit1 << 1) | color_bit0;
                 let color = (self.bgp >> (color_raw * 2)) & 0x03;
 
+                bg_priority[x] = color_raw != 0;
                 scanline[x] = color;
             }
         }
@@ -315,10 +317,86 @@ impl Ppu {
                 let color_raw = (color_bit1 << 1) | color_bit0;
                 let color = (self.bgp >> (color_raw * 2)) & 0x03;
 
+                bg_priority[x] = color_raw != 0;
                 scanline[x] = color;
             }
 
             self.wline_counter = self.wline_counter.wrapping_add(1);
+        }
+
+        // Draw sprites
+        if (self.lcdc & 0x02) != 0 {
+            let sprite_height = if (self.lcdc & 0x04) != 0 { 16 } else { 8 };
+            let ly = self.ly as i16;
+
+            let mut sprites = [(0i16, 0i16, 0u8, 0u8); 10];
+            let mut sprite_count = 0;
+
+            for sprite in self.oam.chunks_exact(4) {
+                let sprite_y = (sprite[0] as i16) - 16;
+                let sprite_x = (sprite[1] as i16) - 8;
+
+                if ly >= sprite_y && ly < sprite_y + (sprite_height as i16) {
+                    let mut i = sprite_count;
+
+                    while i > 0 && sprites[i - 1].0 <= sprite_x {
+                        sprites[i] = sprites[i - 1];
+                        i -= 1;
+                    }
+
+                    sprites[i] = (sprite_x, sprite_y, sprite[2], sprite[3]);
+                    sprite_count += 1;
+
+                    if sprite_count >= 10 {
+                        break;
+                    }
+                }
+            }
+
+            for &(sprite_x, sprite_y, tile_num, attributes) in &sprites[..sprite_count] {
+                let y_offset = (ly - sprite_y) as u8;
+                let y_flip = (attributes & 0x40) != 0;
+                let x_flip = (attributes & 0x20) != 0;
+                let palette = if (attributes & 0x10) != 0 { self.obp1 } else { self.obp0 };
+
+                let tile_line = if y_flip {
+                    sprite_height - 1 - y_offset
+                } else {
+                    y_offset
+                } as usize;
+
+                let tile_addr = if sprite_height == 16 {
+                    (tile_num & 0xFE) as usize * 16
+                } else {
+                    tile_num as usize * 16
+                };
+
+                let line_addr = tile_addr + (tile_line * 2);
+                let byte1 = self.vram[line_addr];
+                let byte2 = self.vram[line_addr + 1];
+
+                for x in 0..8 {
+                    let pixel_x = sprite_x + (x as i16);
+                    if bg_priority[pixel_x as usize] && (attributes & 0x80) != 0 {
+                        continue;
+                    }
+
+                    let bit_index = if x_flip { x } else { 7 - x };
+                    let color_bit0 = (byte1 >> bit_index) & 0x01;
+                    let color_bit1 = (byte2 >> bit_index) & 0x01;
+                    let color_raw = (color_bit1 << 1) | color_bit0;
+
+                    if color_raw == 0 {
+                        continue;
+                    }
+
+                    let color = (palette >> (color_raw * 2)) & 0x03;
+
+                    if pixel_x >= 0 && (pixel_x as usize) < SCREEN_WIDTH {
+                        scanline[pixel_x as usize] = color;
+                    }
+                }
+            }
         }
     }
 }

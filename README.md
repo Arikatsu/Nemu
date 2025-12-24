@@ -42,7 +42,7 @@ Features implemented so far:
 - [x] Interrupt handling
 - [x] Debugger (partial, missing breakpoints specially. WIP)
 - [x] Background/Window rendering and PPU mode switching
-- [ ] Sprite rendering
+- [x] Sprite rendering
 - [ ] Joypad input
 - [ ] MBC cartridges
 - [ ] Sound
