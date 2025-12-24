@@ -377,7 +377,10 @@ impl Ppu {
 
                 for x in 0..8 {
                     let pixel_x = sprite_x + (x as i16);
-                    if bg_priority[pixel_x as usize] && (attributes & 0x80) != 0 {
+
+                    if pixel_x < 0 || (pixel_x as usize) >= SCREEN_WIDTH ||
+                        bg_priority[pixel_x as usize] && (attributes & 0x80) != 0
+                    {
                         continue;
                     }
 
@@ -391,10 +394,7 @@ impl Ppu {
                     }
 
                     let color = (palette >> (color_raw * 2)) & 0x03;
-
-                    if pixel_x >= 0 && (pixel_x as usize) < SCREEN_WIDTH {
-                        scanline[pixel_x as usize] = color;
-                    }
+                    scanline[pixel_x as usize] = color;
                 }
             }
         }
