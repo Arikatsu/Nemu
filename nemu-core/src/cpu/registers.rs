@@ -35,30 +35,30 @@ pub enum Reg16 {
 impl Registers {
     pub(super) fn new() -> Self {
         Self {
-            a: 0x01,
-            f: 0xB0,
-            b: 0x00,
-            c: 0x13,
-            d: 0x00,
-            e: 0xD8,
-            h: 0x01,
-            l: 0x4D,
-            sp: 0xFFFE,
-            pc: 0x0100,
+            a: 0,
+            f: 0,
+            b: 0,
+            c: 0,
+            d: 0,
+            e: 0,
+            h: 0,
+            l: 0,
+            sp: 0,
+            pc: 0,
         }
     }
     
     pub(super) fn reset(&mut self) {
-        self.a = 0x01;
-        self.f = 0xB0;
-        self.b = 0x00;
-        self.c = 0x13;
-        self.d = 0x00;
-        self.e = 0xD8;
-        self.h = 0x01;
-        self.l = 0x4D;
-        self.sp = 0xFFFE;
-        self.pc = 0x0100;
+        self.a = 0;
+        self.f = 0;
+        self.b = 0;
+        self.c = 0;
+        self.d = 0;
+        self.e = 0;
+        self.h = 0;
+        self.l = 0;
+        self.sp = 0;
+        self.pc = 0;
     }
 
     #[inline(always)]
