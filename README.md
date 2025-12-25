@@ -1,18 +1,23 @@
 # Nemu
 
 A Game Boy (DMG) emulator in Rust. 
-Passes Blargg's individual CPU and Timing tests (I need to add mooneye tests later).
 
 This repo contains:
 
 - `nemu-core`: Core emulation logic as a Rust library + a built-in debugger binary
 - `nemu-gui`: GUI for running ROMs (ignore for now, not actively maintained at this stage. Check out the debugger code in `nemu-core` instead)
+- `bootrom`: Custom Boot ROM source code in RGBDS assembly
 
 ## Getting Started
 
-Requirements:
-- Rust 1.85.0 (2024 edition)
-- A computer (optional)
+**Requirements:**
+
+Core:
+- Rust >= v1.85.0
+
+Boot ROM:
+- Make
+- [RGBDS toolchain](https://rgbds.gbdev.io/install)
 
 Clone with submodules:
 
@@ -44,12 +49,21 @@ Features implemented so far:
 - [x] Background/Window rendering and PPU mode switching
 - [x] Sprite rendering
 - [x] Joypad input
+- [x] Custom Boot ROM (in progress, currently only does basic initialization)
 - [ ] MBC cartridges
 - [ ] Sound
 - [ ] Save states
 - [ ] GUI for running ROMs (nemu-gui)
 
 **List items may be updated or even changed as development progresses and does not indicate a strict roadmap.**
+
+## Passing Tests
+
+- Blargg's individual CPU instruction tests
+- Blargg's CPU and Memory instruction timing tests
+- `dmg-acid2` test ROM
+
+(need to test more lol)
 
 ## Notes
 
