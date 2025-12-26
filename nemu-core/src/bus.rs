@@ -2,7 +2,7 @@ use crate::ppu::Ppu;
 use crate::timer::Timer;
 use crate::joypad::Joypad;
 
-const BOOT_ROM: &[u8; 256] = include_bytes!("../../bootrom/build/dmg_boot.bin");
+const BOOT_ROM: &[u8; 256] = include_bytes!("../bootrom/build/dmg_boot.bin");
 
 pub(crate) struct Bus {
     pub(crate) cartridge: [u8; 0x8000], // 32KB Cartridge ROM

@@ -2,3 +2,4 @@
 /.idea
 /mgbdis
 /disassembly
+/nemu-core/bootrom/build

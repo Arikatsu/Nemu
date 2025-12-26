@@ -1,23 +1,19 @@
 # Nemu
 
-A Game Boy (DMG) emulator in Rust. 
+A Game Boy (DMG) emulator written in Rust. 
 
 This repo contains:
 
-- `nemu-core`: Core emulation logic as a Rust library + a built-in debugger binary
+- `nemu-core`: Core emulation logic as a Rust library + a built-in debugger binary + custom boot ROM source code
 - `nemu-gui`: GUI for running ROMs (ignore for now, not actively maintained at this stage. Check out the debugger code in `nemu-core` instead)
-- `bootrom`: Custom Boot ROM source code in RGBDS assembly
 
 ## Getting Started
 
 **Requirements:**
 
-Core:
-- Rust >= v1.85.0
-
-Boot ROM:
-- Make
+- [Rust toolchain](https://www.rust-lang.org/tools/install) (duh)
 - [RGBDS toolchain](https://rgbds.gbdev.io/install)
+- A computer (strongly recommended)
 
 Clone with submodules:
 
@@ -25,12 +21,19 @@ Clone with submodules:
 git clone --recurse-submodules https://github.com/Arikatsu/nemu.git
 ```
 
+Build the boot ROM:
+
+```bash
+cd nemu_core/bootrom
+./build.sh # OR .\build.ps1 on Windows PowerShell
+```
+
 Run tests:
 ```bash
 cargo test -p nemu-core --lib
 ```
 
-Run the interactive debugger:
+Run with the debugger:
 ```bash
 cargo run -p nemu-core --features debugger
 ```
@@ -67,5 +70,6 @@ Features implemented so far:
 
 ## Notes
 
-- The code is still a work in progress and may contain bugs or incomplete features. (Looking at you Halt Bug!!!!)
-- Contributions and feedback are welcome!
+- The project is still under active development and may contain bugs or incomplete behavior.
+- Contributions, bug reports, and feedback are welcome.
+- Yes, I have NOT come around to adding the HALT bug yet.
