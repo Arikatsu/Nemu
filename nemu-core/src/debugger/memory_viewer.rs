@@ -15,7 +15,7 @@ impl MemoryViewer {
         }
     }
 
-    pub(super) fn render_memory_viewer(&mut self, ui: &mut egui::Ui, nemu: &crate::Nemu) {
+    pub(super) fn render(&mut self, ui: &mut egui::Ui, nemu: &crate::Nemu) {
         ui.horizontal(|ui| {
             ui.label("Address:");
             ui.add(

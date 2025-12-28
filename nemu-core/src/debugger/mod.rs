@@ -47,7 +47,7 @@ impl Debugger {
             cc.egui_ctx
                 .load_texture("screen", blank_image, egui::TextureOptions::NEAREST);
 
-        Self {
+        let mut debugger = Self {
             nemu: Nemu::default(),
             cur_rom: String::new(),
 
@@ -61,7 +61,11 @@ impl Debugger {
             memory_viewer: MemoryViewer::new(),
             disassembler: Disassembler::new(),
             fps_tracker: FpsTracker::new(),
-        }
+        };
+        
+        debugger.memory_viewer.refresh_memory_view(&debugger.nemu.bus);
+        
+        debugger
     }
 
     fn update_screen_texture(&mut self) {
@@ -304,7 +308,7 @@ impl eframe::App for Debugger {
             .default_pos([725.0, 55.0])
             .default_size([300.0, 400.0])
             .show(ctx, |ui| {
-                self.memory_viewer.render_memory_viewer(ui, &self.nemu);
+                self.memory_viewer.render(ui, &self.nemu);
             });
     }
 }
