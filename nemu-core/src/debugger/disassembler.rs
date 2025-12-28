@@ -1,138 +1,150 @@
+use crate::Nemu;
 use crate::bus::Bus;
 
 use eframe::egui;
-use std::time::Instant;
-use crate::Nemu;
+use std::fmt::Write;
 
 const DISASM_WINDOW_SIZE: usize = 30;
-const DISASM_MAX_BYTES: usize = 0x100;
-const DISASM_REFRESH_MS: u64 = 150;
 
 pub(super) struct Disassembler {
-    disasm_base_pc: u16,
-    disasm_lines: Vec<(u16, String, String)>,
-    last_disasm_update: Instant,
+    cache_lines: Vec<(u16, String, String)>,
+    jump_addr_input: String,
+    view_addr: u16,
+    follow_pc: bool,
+    cache_valid: bool,
 }
 
 impl Disassembler {
     pub(super) fn new() -> Self {
         Self {
-            disasm_base_pc: 0,
-            disasm_lines: Vec::new(),
-            last_disasm_update: Instant::now(),
+            cache_lines: Vec::with_capacity(DISASM_WINDOW_SIZE),
+            jump_addr_input: String::from("0000"),
+            view_addr: 0,
+            follow_pc: true,
+            cache_valid: false,
         }
     }
 
-    pub(super) fn update(&mut self, pc: u16) {
-        self.disasm_base_pc = pc;
-        self.disasm_lines.clear();
-        self.last_disasm_update = Instant::now();
+    pub(super) fn invalidate_cache(&mut self) {
+        self.cache_valid = false;
     }
 
-    fn disassemble(info: &OpcodeInfo, bus: &Bus, pc: u16) -> String {
-        let next_pc = pc.wrapping_add(info.length as u16);
+    fn rebuild_cache(&mut self, nemu: &Nemu) {
+        self.cache_lines.clear();
 
-        let result = match info.operand {
-            Operand::None => String::from(info.mnemonic_prefix),
-            Operand::U8 => {
-                let val = bus.peek(pc + 1);
-                format!(
-                    "{}${:02X}{}",
-                    info.mnemonic_prefix, val, info.mnemonic_suffix
-                )
-            }
-            Operand::U16 => {
-                let lo = bus.peek(pc + 1);
-                let hi = bus.peek(pc + 2);
-                let val = (hi as u16) << 8 | (lo as u16);
-                format!(
-                    "{}${:04X}{}",
-                    info.mnemonic_prefix, val, info.mnemonic_suffix
-                )
-            }
-            Operand::I8 => {
-                let offset = bus.peek(pc + 1) as i8;
-                let target = (next_pc as i32 + offset as i32) as u16;
-                format!(
-                    "{}${:04X}{}",
-                    info.mnemonic_prefix, target, info.mnemonic_suffix
-                )
-            }
-        };
+        let mut addr = self.view_addr;
+        let mut bytes_buf = String::with_capacity(12);
+        let mut instr_buf = String::with_capacity(32);
 
-        result
-    }
-
-    fn needs_disassemble_rebuild(&self, pc: u16) -> bool {
-        let first_addr = match self.disasm_lines.first() {
-            Some((addr, _, _)) => *addr,
-            None => return true,
-        };
-        let last_addr = match self.disasm_lines.last() {
-            Some((addr, _, _)) => *addr,
-            None => return true,
-        };
-
-        pc < first_addr || pc > last_addr
-    }
-
-    fn rebuild_disassembly_window(&mut self, nemu: &Nemu) {
-        self.disasm_lines.clear();
-
-        let mut addr = nemu.cpu.regs.pc;
-        let mut bytes_consumed = 0;
-
-        while self.disasm_lines.len() < DISASM_WINDOW_SIZE && bytes_consumed < DISASM_MAX_BYTES {
+        for _ in 0..DISASM_WINDOW_SIZE {
             let opcode = nemu.bus.peek(addr);
+
             let info = if opcode == 0xCB {
-                let cb_opcode = nemu.bus.peek(addr.wrapping_add(1));
-                &CB_OPCODES[cb_opcode as usize]
+                &CB_OPCODES[nemu.bus.peek(addr.wrapping_add(1)) as usize]
             } else {
                 &OPCODES[opcode as usize]
             };
-            let len = info.length.max(1) as u16;
 
-            let bytes_str = (0..len)
-                .map(|i| format!("{:02X}", nemu.bus.peek(addr.wrapping_add(i))))
-                .fold(String::new(), |mut acc, s| {
-                    if !acc.is_empty() {
-                        acc.push(' ');
-                    }
-                    acc.push_str(&s);
-                    acc
-                });
+            let len = info.length as u16;
 
-            let instruction = Self::disassemble(info, &nemu.bus, addr);
+            bytes_buf.clear();
+            for i in 0..len {
+                if i > 0 {
+                    bytes_buf.push(' ');
+                }
+                let byte = nemu.bus.peek(addr.wrapping_add(i));
+                write!(bytes_buf, "{:02X}", byte).unwrap();
+            }
 
-            self.disasm_lines.push((addr, bytes_str, instruction));
+            instr_buf.clear();
+            Self::disassemble_into(info, &nemu.bus, addr, &mut instr_buf);
+
+            self.cache_lines.push((addr, bytes_buf.clone(), instr_buf.clone()));
 
             addr = addr.wrapping_add(len);
-            bytes_consumed += len as usize;
         }
 
-        self.disasm_base_pc = nemu.cpu.regs.pc;
+        self.cache_valid = true;
     }
 
-    pub(super) fn update_disassembly(&mut self, nemu: &Nemu) {
-        let now = Instant::now();
-        if now.duration_since(self.last_disasm_update)
-            < std::time::Duration::from_millis(DISASM_REFRESH_MS)
-        {
-            return;
+    fn disassemble_into(
+        info: &OpcodeInfo,
+        bus: &Bus,
+        pc: u16,
+        buf: &mut String,
+    ) {
+        buf.push_str(info.mnemonic_prefix);
+
+        match info.operand {
+            Operand::None => {}
+            Operand::U8 => {
+                let value = bus.peek(pc.wrapping_add(1));
+                write!(buf, "{:02X}h", value).unwrap();
+            }
+            Operand::U16 => {
+                let low = bus.peek(pc.wrapping_add(1)) as u16;
+                let high = bus.peek(pc.wrapping_add(2)) as u16;
+                let value = (high << 8) | low;
+                write!(buf, "{:04X}h", value).unwrap();
+            }
+            Operand::I8 => {
+                let offset = bus.peek(pc.wrapping_add(1)) as i8;
+                let next_pc = pc.wrapping_add(info.length as u16);
+                let dest = next_pc.wrapping_add_signed(offset as i16);
+                write!(buf, "{:04X}h", dest).unwrap();
+            }
         }
 
-        self.rebuild_disassembly_window(nemu);
-        self.last_disasm_update = now;
+        buf.push_str(info.mnemonic_suffix);
     }
 
-    pub(super) fn render_disassembly(&mut self, ui: &mut egui::Ui, nemu: &Nemu, debugger_running: bool) {
+    pub(super) fn render(
+        &mut self,
+        ui: &mut egui::Ui,
+        nemu: &Nemu,
+    ) {
+        ui.horizontal(|ui| {
+            ui.checkbox(&mut self.follow_pc, "Follow PC");
+
+            ui.separator();
+
+            ui.label("Jump to:");
+            ui.add(egui::TextEdit::singleline(&mut self.jump_addr_input).desired_width(60.0));
+
+            if ui.button("Go").clicked() {
+                if let Ok(addr) = u16::from_str_radix(self.jump_addr_input.trim_start_matches("0x"), 16) {
+                    self.view_addr = addr;
+                    self.follow_pc = false;
+                    self.cache_valid = false;
+                }
+            }
+
+            if ui.button("Go to PC").clicked() {
+                self.view_addr = nemu.cpu.regs.pc;
+                self.follow_pc = true;
+                self.cache_valid = false;
+            }
+        });
+
+        ui.separator();
+
+        if self.follow_pc {
+            let pc = nemu.cpu.regs.pc;
+            let in_cache = self.cache_lines.iter().any(|line| line.0 == pc);
+
+            if !in_cache {
+                self.view_addr = pc;
+                self.cache_valid = false;
+            }
+        }
+
+        if !self.cache_valid {
+            self.rebuild_cache(nemu);
+        }
+
         let pc = nemu.cpu.regs.pc;
-        if !debugger_running && self.needs_disassemble_rebuild(pc) {
-            self.rebuild_disassembly_window(nemu);
-        }
 
         egui::ScrollArea::vertical()
-            .id_salt("disassembly_scroll")
             .auto_shrink([false, false])
             .show(ui, |ui| {
                 egui::Grid::new("disassembly")
@@ -144,19 +156,27 @@ impl Disassembler {
                         ui.heading("Instruction");
                         ui.end_row();
 
-                        for (addr, bytes, text) in &self.disasm_lines {
-                            let is_current = *addr == pc;
+                        for line in &self.cache_lines {
+                            let is_current = line.0 == pc;
 
-                            if is_current {
-                                let highlight_color = egui::Color32::from_rgb(50, 150, 50);
-                                ui.colored_label(highlight_color, egui::RichText::new(format!("{:04X}", addr)).monospace());
-                                ui.colored_label(highlight_color, egui::RichText::new(bytes).monospace());
-                                ui.colored_label(highlight_color, egui::RichText::new(text).monospace());
+                            let text_color = if is_current {
+                                egui::Color32::from_rgb(50, 150, 50)
                             } else {
-                                ui.monospace(format!("{:04X}", addr));
-                                ui.monospace(bytes);
-                                ui.monospace(text);
-                            }
+                                ui.style().visuals.text_color()
+                            };
+
+                            ui.colored_label(
+                                text_color,
+                                egui::RichText::new(format!("{:04X}", line.0)).monospace()
+                            );
+                            ui.colored_label(
+                                text_color,
+                                egui::RichText::new(&line.1).monospace()
+                            );
+                            ui.colored_label(
+                                text_color,
+                                egui::RichText::new(&line.2).monospace()
+                            );
 
                             ui.end_row();
                         }

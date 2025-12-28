@@ -105,7 +105,8 @@ impl Debugger {
                             .to_string();
 
                         self.update_screen_texture();
-                        self.disassembler.update(self.nemu.cpu.regs.pc);
+                        self.fps_tracker.reset();
+                        self.disassembler.invalidate_cache();
                         self.memory_viewer.refresh_memory_view(&self.nemu.bus);
                     }
                 }
@@ -128,15 +129,15 @@ impl Debugger {
                     self.nemu.reset();
                     self.running = false;
                     self.update_screen_texture();
-                    self.disassembler.update(self.nemu.cpu.regs.pc);
                     self.fps_tracker.reset();
+                    self.disassembler.invalidate_cache();
+                    self.memory_viewer.refresh_memory_view(&self.nemu.bus);
                 }
 
                 if ui.button("⏭ Step").clicked() {
                     self.running = false;
                     self.nemu.step();
                     self.update_screen_texture();
-                    self.disassembler.update(self.nemu.cpu.regs.pc);
                 }
 
                 if ui.button(if self.running { "⏸ Pause" } else { "▶ Run" }).clicked() {
@@ -265,7 +266,6 @@ impl eframe::App for Debugger {
                 self.fps_tracker.update();
             }
 
-            self.disassembler.update_disassembly(&self.nemu);
             ctx.request_repaint_after(std::time::Duration::from_millis(16));
         } else {
             self.last_update = Instant::now();
@@ -288,7 +288,7 @@ impl eframe::App for Debugger {
             .default_pos([17.0, 280.0])
             .default_size([240.0, 300.0])
             .show(ctx, |ui| {
-                self.disassembler.render_disassembly(ui, &self.nemu, self.running);
+                self.disassembler.render(ui, &self.nemu);
             });
 
         egui::Window::new("Screen")
