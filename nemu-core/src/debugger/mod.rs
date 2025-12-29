@@ -1,13 +1,15 @@
 mod disassembler;
 mod fps_tracker;
 mod memory_viewer;
+mod breakpoints;
 
 use eframe::egui;
 use std::time::Instant;
 
 use crate::Nemu;
-use disassembler::Disassembler;
 use fps_tracker::FpsTracker;
+use breakpoints::Breakpoints;
+use disassembler::Disassembler;
 use memory_viewer::MemoryViewer;
 
 const WIDTH: usize = 160;
@@ -36,6 +38,7 @@ pub struct Debugger {
     memory_viewer: MemoryViewer,
     disassembler: Disassembler,
     fps_tracker: FpsTracker,
+    breakpoints: Breakpoints,
 }
 
 impl Debugger {
@@ -61,6 +64,7 @@ impl Debugger {
             memory_viewer: MemoryViewer::new(),
             disassembler: Disassembler::new(),
             fps_tracker: FpsTracker::new(),
+            breakpoints: Breakpoints::new(),
         };
 
         debugger.memory_viewer.refresh_memory_view(&debugger.nemu.bus);
@@ -145,7 +149,15 @@ impl Debugger {
                 }
 
                 if ui.button(if self.running { "⏸ Pause" } else { "▶ Run" }).clicked() {
-                    self.running = !self.running;
+                    if self.running {
+                        self.running = false;
+                    } else {
+                        if self.breakpoints.is_breakpoint(self.nemu.cpu.regs.pc) {
+                            self.nemu.step();
+                        }
+
+                        self.running = true;
+                    }
                 }
             });
         });
@@ -261,6 +273,11 @@ impl eframe::App for Debugger {
             }
 
             while self.tick_accumulator > 0.0 {
+                if self.breakpoints.is_breakpoint(self.nemu.cpu.regs.pc) {
+                    self.running = false;
+                    break;
+                }
+
                 let cycles = self.nemu.step();
                 self.tick_accumulator -= cycles as f64;
             }
@@ -295,7 +312,7 @@ impl eframe::App for Debugger {
             .default_size([300.0, 550.0])
             .min_width(300.0)
             .show(ctx, |ui| {
-                self.disassembler.render(ui, &self.nemu);
+                self.disassembler.render(ui, &self.nemu, &mut self.breakpoints);
             });
 
         egui::Window::new("CPU")
@@ -303,6 +320,13 @@ impl eframe::App for Debugger {
             .default_size([240.0, 300.0])
             .show(ctx, |ui| {
                 self.render_cpu_window(ui);
+            });
+
+        egui::Window::new("Breakpoints")
+            .default_pos([360.0, 280.0])
+            .default_size([240.0, 200.0])
+            .show(ctx, |ui| {
+                self.breakpoints.render(ui);
             });
 
         egui::Window::new("Memory Viewer")

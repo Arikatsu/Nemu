@@ -102,6 +102,7 @@ impl Disassembler {
         &mut self,
         ui: &mut egui::Ui,
         nemu: &Nemu,
+        breakpoints: &mut super::Breakpoints
     ) {
         ui.horizontal(|ui| {
             ui.checkbox(&mut self.follow_pc, "Follow PC");
@@ -148,9 +149,10 @@ impl Disassembler {
             .auto_shrink([false, false])
             .show(ui, |ui| {
                 egui::Grid::new("disassembly")
-                    .spacing([12.0, 4.0])
+                    .spacing([0.0, 4.0])
                     .striped(true)
                     .show(ui, |ui| {
+                        ui.heading(" ");
                         ui.heading("Addr");
                         ui.heading("Bytes");
                         ui.heading("Instruction");
@@ -165,18 +167,60 @@ impl Disassembler {
                                 ui.style().visuals.text_color()
                             };
 
-                            ui.colored_label(
-                                text_color,
-                                egui::RichText::new(format!("{:04X}", line.0)).monospace()
+                            let (rect, response) = ui.allocate_exact_size(
+                                egui::vec2(40.0, ui.spacing().interact_size.y),
+                                egui::Sense::click()
                             );
-                            ui.colored_label(
-                                text_color,
-                                egui::RichText::new(&line.1).monospace()
-                            );
-                            ui.colored_label(
-                                text_color,
-                                egui::RichText::new(&line.2).monospace()
-                            );
+
+                            if breakpoints.is_breakpoint(line.0) {
+                                ui.painter().text(
+                                    rect.center(),
+                                    egui::Align2::CENTER_CENTER,
+                                    "●",
+                                    egui::FontId::monospace(12.0),
+                                    egui::Color32::from_rgb(200, 50, 50)
+                                );
+                            } else if response.hovered() {
+                                ui.painter().text(
+                                    rect.center(),
+                                    egui::Align2::CENTER_CENTER,
+                                    "○",
+                                    egui::FontId::monospace(12.0),
+                                    egui::Color32::from_rgb(120, 120, 120)
+                                );
+                            }
+
+                            if response.clicked() {
+                                if breakpoints.is_breakpoint(line.0) {
+                                    breakpoints.remove_breakpoint(line.0);
+                                } else {
+                                    breakpoints.add_breakpoint(line.0);
+                                }
+                            }
+
+                            ui.scope(|ui| {
+                                ui.colored_label(
+                                    text_color,
+                                    egui::RichText::new(format!("{:04X}", line.0)).monospace()
+                                );
+                                ui.add_space(25.0);
+                            });
+
+                            ui.scope(|ui| {
+                                ui.colored_label(
+                                    text_color,
+                                    egui::RichText::new(&line.1).monospace()
+                                );
+                                ui.add_space(25.0);
+                            });
+
+                            ui.scope(|ui| {
+                                ui.colored_label(
+                                    text_color,
+                                    egui::RichText::new(&line.2).monospace()
+                                );
+                                ui.add_space(25.0);
+                            });
 
                             ui.end_row();
                         }

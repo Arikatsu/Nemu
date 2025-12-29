@@ -48,12 +48,13 @@ Features implemented so far:
 - [x] Bus and memory mapping (partial, will evolve as more features are implemented)
 - [x] Timer
 - [x] Interrupt handling
-- [x] Debugger (partial, missing breakpoints specially. WIP)
+- [x] Debugger
 - [x] Background/Window rendering and PPU mode switching
 - [x] Sprite rendering
 - [x] Joypad input
 - [x] Custom Boot ROM (in progress, currently only does basic initialization)
 - [ ] MBC cartridges
+- [ ] Serial
 - [ ] Sound
 - [ ] Save states
 - [ ] GUI for running ROMs (nemu-gui)
