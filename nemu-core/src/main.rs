@@ -20,7 +20,7 @@ pub fn set_style(cc: &eframe::CreationContext<'_>) {
 
 fn main() -> eframe::Result<(), eframe::Error> {
     let options = eframe::NativeOptions {
-        viewport: egui::ViewportBuilder::default().with_inner_size([1400.0, 720.0]),
+        viewport: egui::ViewportBuilder::default().with_maximized(true),
         ..Default::default()
     };
 

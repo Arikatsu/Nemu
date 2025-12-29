@@ -62,9 +62,9 @@ impl Debugger {
             disassembler: Disassembler::new(),
             fps_tracker: FpsTracker::new(),
         };
-        
+
         debugger.memory_viewer.refresh_memory_view(&debugger.nemu.bus);
-        
+
         debugger
     }
 
@@ -282,30 +282,31 @@ impl eframe::App for Debugger {
                 self.render_header(ui);
             });
 
+        egui::Window::new("Screen")
+            .show(ctx, |ui| {
+                ui.image(egui::ImageSource::Texture(egui::load::SizedTexture {
+                    id: self.screen_tex.id(),
+                    size: egui::vec2((WIDTH * 2) as f32, (HEIGHT * 2) as f32),
+                }));
+            });
+
+        egui::Window::new("Disassembly")
+            .default_pos([17.0, 400.0])
+            .default_size([300.0, 550.0])
+            .min_width(300.0)
+            .show(ctx, |ui| {
+                self.disassembler.render(ui, &self.nemu);
+            });
+
         egui::Window::new("CPU")
+            .default_pos([360.0, 55.0])
             .default_size([240.0, 300.0])
             .show(ctx, |ui| {
                 self.render_cpu_window(ui);
             });
 
-        egui::Window::new("Disassembly")
-            .default_pos([17.0, 280.0])
-            .default_size([240.0, 300.0])
-            .show(ctx, |ui| {
-                self.disassembler.render(ui, &self.nemu);
-            });
-
-        egui::Window::new("Screen")
-            .default_pos([290.0, 55.0])
-            .show(ctx, |ui| {
-                ui.image(egui::ImageSource::Texture(egui::load::SizedTexture {
-                    id: self.screen_tex.id(),
-                    size: egui::vec2(WIDTH as f32 * 2.5, HEIGHT as f32 * 2.5),
-                }));
-            });
-
         egui::Window::new("Memory Viewer")
-            .default_pos([725.0, 55.0])
+            .default_pos([625.0, 55.0])
             .default_size([300.0, 400.0])
             .show(ctx, |ui| {
                 self.memory_viewer.render(ui, &self.nemu);
