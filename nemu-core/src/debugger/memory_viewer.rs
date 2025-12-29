@@ -42,6 +42,18 @@ impl MemoryViewer {
                 self.memory_viewer_addr = nemu.cpu.regs.sp;
                 self.refresh_memory_view(&nemu.bus);
             }
+
+            ui.separator();
+
+            if ui.button("<< Prev Page").clicked() {
+                self.memory_viewer_addr = self.memory_viewer_addr.wrapping_sub(256);
+                self.refresh_memory_view(&nemu.bus);
+            }
+
+            if ui.button("Next Page >>").clicked() {
+                self.memory_viewer_addr = self.memory_viewer_addr.wrapping_add(256);
+                self.refresh_memory_view(&nemu.bus);
+            }
         });
 
         ui.add_space(8.0);
