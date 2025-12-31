@@ -84,7 +84,7 @@ mod tests {
         nemu.load_cartridge(&rom_data).expect("Failed to load test ROM");
         let mut count = 10000;
 
-        for _ in 0..10_000_000 {
+        for _ in 0..100_000_000 {
             nemu.step();
             count -= 1;
 
@@ -101,93 +101,14 @@ mod tests {
             }
         }
 
+        eprintln!("\x1b[31mTest ROM timed out without a result.\x1b[0m");
         false
     }
 
     #[test]
-    fn cpu_instrs_01() {
+    fn cpu_instrs() {
         let result = run_test_rom(
-            "../tests/cpu_instrs/individual/01-special.gb",
-        );
-        assert!(result);
-    }
-
-    #[test]
-    fn cpu_instrs_02() {
-        let result = run_test_rom(
-            "../tests/cpu_instrs/individual/02-interrupts.gb",
-        );
-        assert!(result);
-    }
-
-    #[test]
-    fn cpu_instrs_03() {
-        let result = run_test_rom(
-            "../tests/cpu_instrs/individual/03-op sp,hl.gb",
-        );
-        assert!(result);
-    }
-
-    #[test]
-    fn cpu_instrs_04() {
-        let result = run_test_rom(
-            "../tests/cpu_instrs/individual/04-op r,imm.gb",
-        );
-        assert!(result);
-    }
-
-    #[test]
-    fn cpu_instrs_05() {
-        let result = run_test_rom(
-            "../tests/cpu_instrs/individual/05-op rp.gb",
-        );
-        assert!(result);
-    }
-
-    #[test]
-    fn cpu_instrs_06() {
-        let result = run_test_rom(
-            "../tests/cpu_instrs/individual/06-ld r,r.gb",
-        );
-        assert!(result);
-    }
-
-    #[test]
-    fn cpu_instrs_07() {
-        let result = run_test_rom(
-            "../tests/cpu_instrs/individual/07-jr,jp,call,ret,rst.gb",
-        );
-        assert!(result);
-    }
-
-    #[test]
-    fn cpu_instrs_08() {
-        let result = run_test_rom(
-            "../tests/cpu_instrs/individual/08-misc instrs.gb",
-        );
-        assert!(result);
-    }
-
-    #[test]
-    fn cpu_instrs_09() {
-        let result = run_test_rom(
-            "../tests/cpu_instrs/individual/09-op r,r.gb",
-        );
-        assert!(result);
-    }
-
-    #[test]
-    fn cpu_instrs_10() {
-        let result = run_test_rom(
-            "../tests/cpu_instrs/individual/10-bit ops.gb",
-        );
-        assert!(result);
-    }
-
-    #[test]
-    fn cpu_instrs_11() {
-        let result = run_test_rom(
-            "../tests/cpu_instrs/individual/11-op a,(hl).gb",
+            "../tests/cpu_instrs/cpu_instrs.gb",
         );
         assert!(result);
     }
@@ -201,25 +122,9 @@ mod tests {
     }
 
     #[test]
-    fn mem_timing_01() {
+    fn mem_timing() {
         let result = run_test_rom(
-            "../tests/mem_timing/individual/01-read_timing.gb",
-        );
-        assert!(result);
-    }
-
-    #[test]
-    fn mem_timing_02() {
-        let result = run_test_rom(
-            "../tests/mem_timing/individual/02-write_timing.gb",
-        );
-        assert!(result);
-    }
-
-    #[test]
-    fn mem_timing_03() {
-        let result = run_test_rom(
-            "../tests/mem_timing/individual/03-modify_timing.gb",
+           "../tests/mem_timing/mem_timing.gb",
         );
         assert!(result);
     }

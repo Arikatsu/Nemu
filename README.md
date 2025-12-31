@@ -63,7 +63,7 @@ Features implemented so far:
 
 ## Passing Tests
 
-- Blargg's individual CPU instruction tests
+- Blargg's CPU instruction tests
 - Blargg's CPU and Memory instruction timing tests
 - `dmg-acid2` test ROM
 
