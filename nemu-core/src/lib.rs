@@ -5,6 +5,7 @@ mod timer;
 mod ppu;
 mod interrupts;
 mod joypad;
+mod mbc;
 
 #[cfg(feature = "debugger")]
 pub mod debugger;
@@ -45,7 +46,7 @@ impl Nemu {
 
     pub fn load_cartridge<P: AsRef<std::path::Path>>(&mut self, path: P) -> std::io::Result<()> {
         let data = std::fs::read(path)?;
-        self.bus.load_cartridge_bytes(&data);
+        self.bus.mbc = mbc::MbcType::new(data);
         Ok(())
     }
     

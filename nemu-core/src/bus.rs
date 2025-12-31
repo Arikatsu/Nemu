@@ -1,11 +1,12 @@
 use crate::ppu::Ppu;
 use crate::timer::Timer;
 use crate::joypad::Joypad;
+use crate::mbc::MbcType;
 
-const BOOT_ROM: &[u8; 256] = include_bytes!("../bootrom/build/dmg_boot.bin");
+const BOOT_ROM: &[u8; 0x100] = include_bytes!("../bootrom/build/dmg_boot.bin");
 
 pub(crate) struct Bus {
-    pub(crate) cartridge: [u8; 0x8000], // 32KB Cartridge ROM
+    pub(crate) mbc: MbcType,
     pub(crate) eram: [u8; 0x2000],      // 8KB External RAM
     pub(crate) wram: [u8; 0x2000],      // 8KB Work RAM
     pub(crate) io: [u8; 0x80],          // I/O Registers
@@ -23,7 +24,7 @@ pub(crate) struct Bus {
 impl Bus {
     pub(crate) fn new() -> Self {
         Self {
-            cartridge: [0; 0x8000],
+            mbc: MbcType::default(),
             eram: [0; 0x2000],
             wram: [0; 0x2000],
             io: [0; 0x80],
@@ -54,11 +55,6 @@ impl Bus {
         self.serial_output.clear();
     }
 
-    pub(crate) fn load_cartridge_bytes(&mut self, data: &[u8]) {
-        let len = data.len().min(self.cartridge.len());
-        self.cartridge[..len].copy_from_slice(&data[..len]);
-    }
-
     pub(crate) fn tick(&mut self, cycles: u8) {
         let ppu_irq_mask = self.ppu.update(cycles);
         let timer_irq_mask = self.timer.update(cycles);
@@ -75,8 +71,8 @@ impl Bus {
     #[inline(always)]
     pub(crate) fn peek(&self, addr: u16) -> u8 {
         match addr {
-            0x0000..=0x00FF if self.boot_rom_enabled => BOOT_ROM[addr as usize],
-            0x0000..=0x7FFF => self.cartridge[addr as usize],
+            0x0000..=0x00FF if self.boot_rom_enabled => unsafe { *BOOT_ROM.get_unchecked(addr as usize) },
+            0x0000..=0x7FFF => self.mbc.read(addr),
             0x8000..=0x9FFF => self.ppu.read(addr),
             0xA000..=0xBFFF => unsafe { *self.eram.get_unchecked((addr - 0xA000) as usize) },
             0xC000..=0xDFFF => unsafe { *self.wram.get_unchecked((addr - 0xC000) as usize) },
