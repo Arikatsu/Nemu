@@ -40,8 +40,6 @@ cargo run -p nemu-core --features debugger
 
 ## Current Status
 
-Nemu is currently able to boot and run simple ROMs that do not require MBC banking.
-
 Features implemented so far:
 
 - [x] Full CPU instruction set and emulation
@@ -52,8 +50,10 @@ Features implemented so far:
 - [x] Background/Window rendering and PPU mode switching
 - [x] Sprite rendering
 - [x] Joypad input
-- [x] Custom Boot ROM (in progress, currently only does basic initialization)
+- [x] Custom Boot ROM (currently only does basic initialization, plan to show my own boot animation later)
 - [ ] MBC cartridges
+  - [X] ROM only
+  - [x] MBC1 (ROM + RAM) (BATTERY SOON)
 - [ ] Serial
 - [ ] Sound
 - [ ] Save states

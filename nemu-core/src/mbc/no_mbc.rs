@@ -9,6 +9,9 @@ impl NoMbc {
 
     #[inline(always)]
     pub(crate) fn read(&self, addr: u16) -> u8 {
-        unsafe { *self.rom.get_unchecked(addr as usize) }
+        match addr {
+            0x0000..=0x7FFF => unsafe { *self.rom.get_unchecked(addr as usize) },
+            _ => 0xFF,
+        }
     }
 }

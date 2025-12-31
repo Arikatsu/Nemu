@@ -74,7 +74,7 @@ impl Bus {
             0x0000..=0x00FF if self.boot_rom_enabled => unsafe { *BOOT_ROM.get_unchecked(addr as usize) },
             0x0000..=0x7FFF => self.mbc.read(addr),
             0x8000..=0x9FFF => self.ppu.read(addr),
-            0xA000..=0xBFFF => unsafe { *self.eram.get_unchecked((addr - 0xA000) as usize) },
+            0xA000..=0xBFFF => self.mbc.read(addr),
             0xC000..=0xDFFF => unsafe { *self.wram.get_unchecked((addr - 0xC000) as usize) },
             0xE000..=0xFDFF => unsafe { *self.wram.get_unchecked((addr - 0xE000) as usize) }, // Echo RAM
             0xFE00..=0xFE9F => self.ppu.read(addr),
@@ -100,7 +100,7 @@ impl Bus {
         self.tick(1);
 
         match addr {
-            0x0000..=0x7FFF => { /* ROM area (no write) */ }
+            0x0000..=0x7FFF => self.mbc.write(addr, data),
             0x8000..=0x9FFF => self.ppu.write(addr, data),
             0xA000..=0xBFFF => unsafe { *self.eram.get_unchecked_mut((addr - 0xA000) as usize) = data },
             0xC000..=0xDFFF => unsafe { *self.wram.get_unchecked_mut((addr - 0xC000) as usize) = data },
