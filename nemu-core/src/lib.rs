@@ -14,6 +14,19 @@ pub mod debugger;
 pub use debugger::Debugger;
 pub use joypad::JoypadButton;
 
+#[derive(Debug)]
+pub enum NemuError {
+    InvalidRom(String),
+}
+
+impl std::fmt::Display for NemuError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            NemuError::InvalidRom(msg) => write!(f, "Invalid ROM: {}", msg),
+        }
+    }
+}
+
 pub struct Nemu {
     pub(crate) cpu: cpu::Cpu,
     pub(crate) bus: bus::Bus,
@@ -29,12 +42,6 @@ impl Default for Nemu {
 }
 
 impl Nemu {
-    pub fn with_rom<P: AsRef<std::path::Path>>(path: P) -> std::io::Result<Self> {
-        let mut nemu = Self::default();
-        nemu.load_cartridge(path)?;
-        Ok(nemu)
-    }
-
     pub fn reset(&mut self) {
         self.cpu.reset();
         self.bus.reset();
@@ -44,9 +51,8 @@ impl Nemu {
         self.cpu.step(&mut self.bus)
     }
 
-    pub fn load_cartridge<P: AsRef<std::path::Path>>(&mut self, path: P) -> std::io::Result<()> {
-        let data = std::fs::read(path)?;
-        self.bus.mbc = mbc::MbcType::new(data);
+    pub fn load_cartridge(&mut self, bytes: &[u8]) -> Result<(), NemuError> {
+        self.bus.mbc = mbc::MbcType::new(bytes.to_vec())?;
         Ok(())
     }
     
@@ -73,7 +79,9 @@ mod tests {
     use super::*;
 
     fn run_test_rom(path: &str) -> bool {
-        let mut nemu = Nemu::with_rom(path).expect("Failed to load ROM");
+        let rom_data = std::fs::read(path).expect("Failed to read test ROM");
+        let mut nemu = Nemu::default();
+        nemu.load_cartridge(&rom_data).expect("Failed to load test ROM");
         let mut count = 10000;
 
         for _ in 0..10_000_000 {

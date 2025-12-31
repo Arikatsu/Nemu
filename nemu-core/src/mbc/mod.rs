@@ -1,3 +1,5 @@
+use crate::NemuError;
+
 mod no_mbc;
 
 pub(crate) enum MbcType {
@@ -11,12 +13,15 @@ impl Default for MbcType {
 }
 
 impl MbcType {
-    pub(crate) fn new(data: Vec<u8>) -> Self {
+    pub(crate) fn new(data: Vec<u8>) -> Result<Self, NemuError> {
         let mbc_type = data[0x147];
 
         match mbc_type {
-            0x00 => Self::NoMbc(no_mbc::NoMbc::new(data)),
-            _ => panic!("Unsupported MBC type: {:02X}", mbc_type),
+            0x00 => Ok(Self::NoMbc(no_mbc::NoMbc::new(data))),
+            _ => Err(NemuError::InvalidRom(format!(
+                "Unsupported MBC type: {:#04X}",
+                mbc_type
+            ))),
         }
     }
     

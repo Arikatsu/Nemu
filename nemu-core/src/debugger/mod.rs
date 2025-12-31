@@ -104,8 +104,16 @@ impl Debugger {
                     .add_filter("GameBoy", &["gb", "bin"])
                     .pick_file()
                 {
-                    if let Err(e) = self.nemu.load_cartridge(&path) {
-                        eprintln!("Failed to load ROM: {}", e);
+                    let rom_data = match std::fs::read(&path) {
+                        Ok(data) => data,
+                        Err(e) => {
+                            eprintln!("Failed to read ROM file: {}", e);
+                            return;
+                        }
+                    };
+                    
+                    if let Err(e) = self.nemu.load_cartridge(&rom_data) {
+                        eprintln!("{}", e);
                     } else {
                         self.cur_rom = path.file_name()
                             .and_then(|name| name.to_str())
