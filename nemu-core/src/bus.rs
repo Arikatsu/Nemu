@@ -78,18 +78,18 @@ impl Bus {
             0x0000..=0x00FF if self.boot_rom_enabled => BOOT_ROM[addr as usize],
             0x0000..=0x7FFF => self.cartridge[addr as usize],
             0x8000..=0x9FFF => self.ppu.read(addr),
-            0xA000..=0xBFFF => self.eram[(addr - 0xA000) as usize],
-            0xC000..=0xDFFF => self.wram[(addr - 0xC000) as usize],
-            0xE000..=0xFDFF => self.wram[(addr - 0xE000) as usize], // Echo RAM
+            0xA000..=0xBFFF => unsafe { *self.eram.get_unchecked((addr - 0xA000) as usize) },
+            0xC000..=0xDFFF => unsafe { *self.wram.get_unchecked((addr - 0xC000) as usize) },
+            0xE000..=0xFDFF => unsafe { *self.wram.get_unchecked((addr - 0xE000) as usize) }, // Echo RAM
             0xFE00..=0xFE9F => self.ppu.read(addr),
             0xFEA0..=0xFEFF => 0, // unusable
             0xFF00 => self.joypad.read(),
             0xFF04..=0xFF07 => self.timer.read(addr),
             0xFF40..=0xFF45 => self.ppu.read(addr),
             0xFF47..=0xFF4B => self.ppu.read(addr),
-            0xFF80..=0xFFFE => self.hram[(addr - 0xFF80) as usize],
+            0xFF80..=0xFFFE => unsafe { *self.hram.get_unchecked((addr - 0xFF80) as usize) },
             0xFFFF => self.ie,
-            _ => self.io[(addr - 0xFF00) as usize], // Fallback for unimplemented I/O
+            _ => unsafe { *self.io.get_unchecked((addr - 0xFF00) as usize) }, // Fallback for unimplemented I/O
         }
     }
 
@@ -106,14 +106,14 @@ impl Bus {
         match addr {
             0x0000..=0x7FFF => { /* ROM area (no write) */ }
             0x8000..=0x9FFF => self.ppu.write(addr, data),
-            0xA000..=0xBFFF => self.eram[(addr - 0xA000) as usize] = data,
-            0xC000..=0xDFFF => self.wram[(addr - 0xC000) as usize] = data,
-            0xE000..=0xFDFF => self.wram[(addr - 0xE000) as usize] = data, // Echo RAM
+            0xA000..=0xBFFF => unsafe { *self.eram.get_unchecked_mut((addr - 0xA000) as usize) = data },
+            0xC000..=0xDFFF => unsafe { *self.wram.get_unchecked_mut((addr - 0xC000) as usize) = data },
+            0xE000..=0xFDFF => unsafe { *self.wram.get_unchecked_mut((addr - 0xE000) as usize) = data }, // Echo RAM
             0xFE00..=0xFE9F => self.ppu.write(addr, data),
             0xFEA0..=0xFEFF => { /* unusable */ }
             0xFF00 => self.joypad.write(data),
             0xFF02 => {
-                self.io[(addr - 0xFF00) as usize] = data;
+                unsafe { *self.io.get_unchecked_mut((addr - 0xFF00) as usize) = data };
                 if data == 0x81 {
                     #[cfg(test)]
                     {
@@ -127,9 +127,9 @@ impl Bus {
             0xFF46 => self.transfer_dma(data),
             0xFF47..=0xFF4B => self.ppu.write(addr, data),
             0xFF50 => self.boot_rom_enabled = false,
-            0xFF80..=0xFFFE => self.hram[(addr - 0xFF80) as usize] = data,
+            0xFF80..=0xFFFE => unsafe { *self.hram.get_unchecked_mut((addr - 0xFF80) as usize) = data },
             0xFFFF => self.ie = data,
-            _ => self.io[(addr - 0xFF00) as usize] = data, // Fallback for unimplemented I/O
+            _ => unsafe { *self.io.get_unchecked_mut((addr - 0xFF00) as usize) = data } // Fallback for unimplemented I/O
         };
     }
 

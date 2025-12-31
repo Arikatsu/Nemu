@@ -103,8 +103,8 @@ impl Ppu {
     #[inline(always)]
     pub(crate) fn read(&self, addr: u16) -> u8 {
         match addr {
-            0x8000..=0x9FFF => self.vram[(addr - 0x8000) as usize],
-            0xFE00..=0xFE9F => self.oam[(addr - 0xFE00) as usize],
+            0x8000..=0x9FFF => unsafe { *self.vram.get_unchecked((addr - 0x8000) as usize) },
+            0xFE00..=0xFE9F => unsafe { *self.oam.get_unchecked((addr - 0xFE00) as usize) },
             0xFF40 => self.lcdc,
             0xFF41 => self.stat,
             0xFF42 => self.scy,
@@ -124,8 +124,8 @@ impl Ppu {
     #[inline(always)]
     pub(crate) fn write(&mut self, addr: u16, value: u8) {
         match addr {
-            0x8000..=0x9FFF => self.vram[(addr - 0x8000) as usize] = value,
-            0xFE00..=0xFE9F => self.oam[(addr - 0xFE00) as usize] = value,
+            0x8000..=0x9FFF => unsafe { *self.vram.get_unchecked_mut((addr - 0x8000) as usize) = value },
+            0xFE00..=0xFE9F => unsafe { *self.oam.get_unchecked_mut((addr - 0xFE00) as usize) = value },
             0xFF40 => self.set_lcdc(value),
             0xFF41 => self.stat = (value & 0xF8) | (self.stat & 0x07),
             0xFF42 => self.scy = value,

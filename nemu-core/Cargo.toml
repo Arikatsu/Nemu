@@ -17,8 +17,11 @@ eframe = { version = "0.33.2", optional = true }
 rfd = { version = "0.16.0", optional = true }
 
 [profile.release]
-opt-level = "z"
+opt-level = 3
 lto = true
 codegen-units = 1
 panic = "abort"
 strip = true
+
+[profile.dev]
+opt-level = 1
