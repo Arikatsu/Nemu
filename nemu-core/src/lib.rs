@@ -51,6 +51,11 @@ impl Nemu {
         self.cpu.step(&mut self.bus)
     }
 
+    pub fn skip_boot(&mut self) {
+        self.cpu.regs.skip_boot();
+        self.bus.boot_rom_enabled = false;
+    }
+
     pub fn load_cartridge(&mut self, bytes: &[u8]) -> Result<(), NemuError> {
         self.bus.mbc = mbc::MbcType::new(bytes.to_vec())?;
         Ok(())
@@ -82,6 +87,8 @@ mod tests {
         let rom_data = std::fs::read(path).expect("Failed to read test ROM");
         let mut nemu = Nemu::default();
         nemu.load_cartridge(&rom_data).expect("Failed to load test ROM");
+        nemu.skip_boot();
+
         let mut count = 10000;
 
         for _ in 0..100_000_000 {

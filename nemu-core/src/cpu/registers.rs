@@ -48,6 +48,19 @@ impl Registers {
         }
     }
     
+    pub(crate) fn skip_boot(&mut self) {
+        self.a = 0x01;
+        self.f = 0xB0;
+        self.b = 0x00;
+        self.c = 0x13;
+        self.d = 0x00;
+        self.e = 0xD8;
+        self.h = 0x01;
+        self.l = 0x4D;
+        self.sp = 0xFFFE;
+        self.pc = 0x0100;
+    }
+    
     pub(super) fn reset(&mut self) {
         self.a = 0;
         self.f = 0;

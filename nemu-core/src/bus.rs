@@ -15,7 +15,7 @@ pub(crate) struct Bus {
     pub(crate) timer: Timer,
     pub(crate) ppu: Ppu,
     pub(crate) joypad: Joypad,
-    boot_rom_enabled: bool,
+    pub(crate) boot_rom_enabled: bool,
 
     #[cfg(test)]
     pub(crate) serial_output: String,
