@@ -7,7 +7,6 @@ const BOOT_ROM: &[u8; 0x100] = include_bytes!("../bootrom/build/dmg_boot.bin");
 
 pub(crate) struct Bus {
     pub(crate) mbc: MbcType,
-    pub(crate) eram: [u8; 0x2000],      // 8KB External RAM
     pub(crate) wram: [u8; 0x2000],      // 8KB Work RAM
     pub(crate) io: [u8; 0x80],          // I/O Registers
     pub(crate) hram: [u8; 0x7F],        // High RAM
@@ -25,7 +24,6 @@ impl Bus {
     pub(crate) fn new() -> Self {
         Self {
             mbc: MbcType::default(),
-            eram: [0; 0x2000],
             wram: [0; 0x2000],
             io: [0; 0x80],
             hram: [0; 0x7F],
@@ -41,7 +39,6 @@ impl Bus {
     }
 
     pub(crate) fn reset(&mut self) {
-        self.eram = [0; 0x2000];
         self.wram = [0; 0x2000];
         self.io = [0; 0x80];
         self.hram = [0; 0x7F];
@@ -102,7 +99,7 @@ impl Bus {
         match addr {
             0x0000..=0x7FFF => self.mbc.write(addr, data),
             0x8000..=0x9FFF => self.ppu.write(addr, data),
-            0xA000..=0xBFFF => unsafe { *self.eram.get_unchecked_mut((addr - 0xA000) as usize) = data },
+            0xA000..=0xBFFF => self.mbc.write(addr, data),
             0xC000..=0xDFFF => unsafe { *self.wram.get_unchecked_mut((addr - 0xC000) as usize) = data },
             0xE000..=0xFDFF => unsafe { *self.wram.get_unchecked_mut((addr - 0xE000) as usize) = data }, // Echo RAM
             0xFE00..=0xFE9F => self.ppu.write(addr, data),
