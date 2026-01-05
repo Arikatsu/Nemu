@@ -20,7 +20,7 @@ impl MbcType {
 
         match mbc_type {
             0x00 => Ok(Self::NoMbc(no_mbc::NoMbc::new(data))),
-            0x01 | 0x02 => Ok(Self::Mbc1(mbc1::Mbc1::new(data))),
+            0x01 | 0x02 | 0x03 => Ok(Self::Mbc1(mbc1::Mbc1::new(data))),
 
             _ => Err(NemuError::InvalidRom(format!(
                 "Unsupported MBC type: {:#04X}",
